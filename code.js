@@ -1,4 +1,4 @@
-figma.showUI(__html__, { width: 400, height: 600 });
+figma.showUI(__html__, { width: 600, height: 400 });
 
 const getComponentVariants = async () => {
     const componentSets = figma.currentPage.findAll(node => node.type === "COMPONENT_SET");
@@ -17,12 +17,6 @@ const getComponentVariants = async () => {
                 currentNode = currentNode.parent;
             }
 
-            // Ensure component set is valid before processing
-            if (!componentSet || !componentSet.children) {
-                console.warn(`Skipping component set: ${componentSet?.name || "Unknown"} due to errors.`);
-                return null;
-            }
-
             const variantInstances = figma.currentPage.findAll(node =>
                 node.type === "INSTANCE" && node.mainComponent && node.mainComponent.parent === componentSet
             );
@@ -30,17 +24,14 @@ const getComponentVariants = async () => {
             const instanceCount = variantInstances.length;
             const instanceParents = Array.from(new Set(variantInstances.map(inst => (inst.parent ? inst.parent.name : "Unknown"))));
 
-            const variants = componentSet.children
-                .filter(variant => variant && variant.variantProperties)
-                .map(variant => ({
-                    name: variant.name,
-                    properties: Object.entries(variant.variantProperties || {}).reduce((acc, [key, value]) => {
-                        if (!acc[key]) acc[key] = new Set();
-                        acc[key].add(value);
-                        return acc;
-                    }, {})
-                }))
-                .filter(variant => Object.keys(variant.properties).length > 0);
+            const variants = componentSet.children.map(variant => ({
+                name: variant.name,
+                properties: Object.entries(variant.variantProperties || {}).reduce((acc, [key, value]) => {
+                    if (!acc[key]) acc[key] = new Set();
+                    acc[key].add(value);
+                    return acc;
+                }, {})
+            })).filter(variant => Object.keys(variant.properties).length > 0);
 
             return {
                 name: componentSet.name,
@@ -51,18 +42,15 @@ const getComponentVariants = async () => {
             };
         } catch (error) {
             console.error(`Error processing component set: ${componentSet.name}`, error);
-            return null;  // Skip faulty components
+            return { name: componentSet.name, link: "Not Available", instanceCount: 0, instanceParents: [], variants: [] };
         }
     }));
 
-    return results.filter(set => set !== null && set.variants.length > 0);
+    return results.filter(set => set.variants.length > 0);
 };
 
 // Send variant data to UI
 getComponentVariants().then(data => {
-    if (data.length === 0) {
-        figma.notify("No valid component sets found.");
-    }
     figma.ui.postMessage({ type: "displayVariants", data });
 });
 

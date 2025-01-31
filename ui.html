@@ -4,105 +4,41 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Component Variants</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            padding: 20px;
-        }
-
-        select {
-            margin-bottom: 10px;
-            width: 100%;
-            padding: 5px;
-        }
-
-        .variant-table {
-            border-collapse: collapse;
-            width: 100%;
-            margin-top: 10px;
-        }
-
-            .variant-table th, .variant-table td {
-                border: 1px solid #ddd;
-                padding: 8px;
-            }
-
-            .variant-table th {
-                background-color: #f4f4f4;
-            }
-
-        .hidden {
-            display: none;
-        }
-
-        .link-cell {
-            word-break: break-all;
-        }
-    </style>
 </head>
 <body>
     <h2>Component Variants</h2>
-    <label for="componentSelect">Select a Component:</label>
-    <select id="componentSelect"></select>
-    <div id="variantContainer"></div>
+    <select id="componentDropdown"></select>
+    <div id="output"></div>
     <button onclick="parent.postMessage({ pluginMessage: { type: 'close-plugin' } }, '*')">Close</button>
 
     <script>window.onmessage = (event) => {
             const { type, data } = event.data.pluginMessage;
             if (type === 'displayVariants') {
-                const dropdown = document.getElementById("componentSelect");
-                const container = document.getElementById("variantContainer");
+                const dropdown = document.getElementById('componentDropdown');
+                const output = document.getElementById('output');
 
-                dropdown.innerHTML = ''; // Clear dropdown
-                container.innerHTML = ''; // Clear variant display
+                dropdown.innerHTML = data.map(({ name }, index) =>
+                    `<option value="${index}">${name}</option>`
+                ).join('');
 
-                data.forEach(component => {
-                    const option = document.createElement("option");
-                    option.value = component.name;
-                    option.textContent = component.name;
-                    dropdown.appendChild(option);
+                const displayVariantDetails = (index) => {
+                    const { name, link, variants } = data[index];
+                    output.innerHTML = `<h3>${name}</h3>
+                            <p>Figma Link: <a href="${link}" target="_blank">${link}</a></p>
+                            ${variants.map(v => `
+                                <h4>${v.name}</h4>
+                                <ul>${Object.entries(v.properties).map(([key, values]) =>
+                        `<li><strong>${key}:</strong> ${values}</li>`).join('')}
+                                </ul>
+                            `).join('')}`;
+                };
 
-                    const table = document.createElement("table");
-                    table.className = "variant-table hidden";
-                    table.id = `table-${component.name}`;
-
-                    const thead = document.createElement("thead");
-                    const headerRow = document.createElement("tr");
-                    headerRow.innerHTML = "<th>Property</th><th>Values</th><th>Figma Link</th>";
-                    thead.appendChild(headerRow);
-                    table.appendChild(thead);
-
-                    const tbody = document.createElement("tbody");
-                    const propertyMap = {};
-
-                    component.variants.forEach(variant => {
-                        Object.entries(variant.properties).forEach(([key, value]) => {
-                            if (!propertyMap[key]) {
-                                propertyMap[key] = new Set();
-                            }
-                            propertyMap[key].add(value);
-                        });
-                    });
-
-                    Object.entries(propertyMap).forEach(([key, values]) => {
-                        const row = document.createElement("tr");
-                        row.innerHTML = `<td>${key}</td><td>${Array.from(values).join(", ")}</td><td class='link-cell'>${component.link}</td>`;
-                        tbody.appendChild(row);
-                    });
-
-                    table.appendChild(tbody);
-                    container.appendChild(table);
+                dropdown.addEventListener('change', (event) => {
+                    displayVariantDetails(event.target.value);
                 });
 
-                dropdown.addEventListener("change", () => {
-                    document.querySelectorAll(".variant-table").forEach(table => table.classList.add("hidden"));
-                    const selectedTable = document.getElementById(`table-${dropdown.value}`);
-                    if (selectedTable) selectedTable.classList.remove("hidden");
-                });
-
-                if (data.length > 0) {
-                    dropdown.dispatchEvent(new Event("change"));
-                }
+                // Show first item by default
+                if (data.length > 0) displayVariantDetails(0);
             }
         };</script>
 </body>
