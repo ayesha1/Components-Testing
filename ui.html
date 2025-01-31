@@ -4,42 +4,142 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Component Variants</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 10px;
+        }
+
+        select {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f4f4f4;
+        }
+
+        .close-btn {
+            margin-top: 10px;
+            padding: 8px;
+            background: red;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body>
     <h2>Component Variants</h2>
-    <select id="componentDropdown"></select>
-    <div id="output"></div>
-    <button onclick="parent.postMessage({ pluginMessage: { type: 'close-plugin' } }, '*')">Close</button>
 
-    <script>window.onmessage = (event) => {
-            const { type, data } = event.data.pluginMessage;
-            if (type === 'displayVariants') {
-                const dropdown = document.getElementById('componentDropdown');
-                const output = document.getElementById('output');
+    <!-- Dropdown for component selection -->
+    <label for="componentSelect">Select Component:</label>
+    <select id="componentSelect">
+        <option value="all">Show All</option>
+    </select>
 
-                dropdown.innerHTML = data.map(({ name }, index) =>
-                    `<option value="${index}">${name}</option>`
-                ).join('');
+    <table>
+        <thead>
+            <tr>
+                <th>Component Name</th>
+                <th>Properties</th>
+                <th>Values</th>
+                <th>Instances</th>
+                <th>Frame Link</th>
+            </tr>
+        </thead>
+        <tbody id="variantTable"></tbody>
+    </table>
+    <button class="close-btn" onclick="closePlugin()">Close</button>
 
-                const displayVariantDetails = (index) => {
-                    const { name, link, variants } = data[index];
-                    output.innerHTML = `<h3>${name}</h3>
-                            <p>Figma Link: <a href="${link}" target="_blank">${link}</a></p>
-                            ${variants.map(v => `
-                                <h4>${v.name}</h4>
-                                <ul>${Object.entries(v.properties).map(([key, values]) =>
-                        `<li><strong>${key}:</strong> ${values}</li>`).join('')}
-                                </ul>
-                            `).join('')}`;
-                };
+    <script>let allVariants = [];
 
-                dropdown.addEventListener('change', (event) => {
-                    displayVariantDetails(event.target.value);
-                });
-
-                // Show first item by default
-                if (data.length > 0) displayVariantDetails(0);
+        window.onmessage = (event) => {
+            if (event.data.pluginMessage.type === "displayVariants") {
+                allVariants = event.data.pluginMessage.data;
+                populateDropdown(allVariants);
+                displayVariants(allVariants);
             }
-        };</script>
+        };
+
+        function populateDropdown(variants) {
+            const select = document.getElementById("componentSelect");
+            select.innerHTML = '<option value="all">Show All</option>';
+
+            variants.forEach(component => {
+                const option = document.createElement("option");
+                option.value = component.name;
+                option.textContent = component.name;
+                select.appendChild(option);
+            });
+
+            select.addEventListener("change", filterVariants);
+        }
+
+        function filterVariants() {
+            const selectedComponent = document.getElementById("componentSelect").value;
+            if (selectedComponent === "all") {
+                displayVariants(allVariants);
+            } else {
+                const filtered = allVariants.filter(component => component.name === selectedComponent);
+                displayVariants(filtered);
+            }
+        }
+
+        function displayVariants(variants) {
+            const tableBody = document.getElementById("variantTable");
+            tableBody.innerHTML = "";
+
+            variants.forEach(component => {
+                component.variants.forEach(variant => {
+                    const row = document.createElement("tr");
+
+                    const nameCell = document.createElement("td");
+                    nameCell.textContent = component.name;
+
+                    const propertiesCell = document.createElement("td");
+                    propertiesCell.innerHTML = Object.keys(variant.properties).join("<br>");
+
+                    const valuesCell = document.createElement("td");
+                    valuesCell.innerHTML = Object.entries(variant.properties)
+                        .map(([key, values]) => values.map(value => `• ${value}`).join("<br>"))
+                        .join("<br>");
+
+                    const instancesCell = document.createElement("td");
+                    instancesCell.innerHTML = `Count: ${component.instanceCount} <br> Parent: ${component.instanceParents.join(", ")}`;
+
+                    const linkCell = document.createElement("td");
+                    const link = document.createElement("a");
+                    link.href = component.link;
+                    link.textContent = "View in Figma";
+                    link.target = "_blank";
+                    linkCell.appendChild(link);
+
+                    row.appendChild(nameCell);
+                    row.appendChild(propertiesCell);
+                    row.appendChild(valuesCell);
+                    row.appendChild(instancesCell);
+                    row.appendChild(linkCell);
+                    tableBody.appendChild(row);
+                });
+            });
+        }
+
+        function closePlugin() {
+            parent.postMessage({ pluginMessage: { type: "close-plugin" } }, "*");
+        }</script>
 </body>
 </html>

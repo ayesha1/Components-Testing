@@ -27,8 +27,8 @@ const getComponentVariants = async () => {
             const variants = componentSet.children.map(variant => ({
                 name: variant.name,
                 properties: Object.entries(variant.variantProperties || {}).reduce((acc, [key, value]) => {
-                    if (!acc[key]) acc[key] = new Set();
-                    acc[key].add(value);
+                    if (!acc[key]) acc[key] = [];
+                    acc[key].push(value);
                     return acc;
                 }, {})
             })).filter(variant => Object.keys(variant.properties).length > 0);
