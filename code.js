@@ -1,4 +1,4 @@
-figma.showUI(__html__, { width: 550, height: 750 });
+figma.showUI(__html__, { width: 600, height: 750 });
 
 const saveNodeAsPNG = async (node) => {
     try {
@@ -26,19 +26,33 @@ const getComponentVariants = async () => {
                 currentNode = currentNode.parent;
             }
 
+            let allProperties = {};
             const variants = await Promise.all(componentSet.children.map(async (variant) => {
                 const variantImage = await saveNodeAsPNG(variant);
+                const properties = variant.variantProperties || {};
+
+                Object.entries(properties).forEach(([key, value]) => {
+                    if (!allProperties[key]) allProperties[key] = new Set();
+                    allProperties[key].add(value);
+                });
+
+                const instances = figma.currentPage.findAll(node =>
+                    node.type === "INSTANCE" && node.mainComponent === variant
+                );
+
                 return {
                     name: variant.name,
-                    properties: variant.variantProperties || {},
-                    image: variantImage
+                    properties,
+                    image: variantImage,
+                    instanceCount: instances.length,
+                    instanceParents: Array.from(new Set(instances.map(inst => inst.parent ? inst.parent.name : "Unknown")))
                 };
             }));
 
-            return { name: componentSet.name, link: frameLink, variants };
+            return { name: componentSet.name, link: frameLink, allProperties, variants };
         } catch (error) {
             console.error(`Error processing component set: ${componentSet.name}`, error);
-            return { name: componentSet.name, link: "Not Available", variants: [] };
+            return { name: componentSet.name, link: "Not Available", allProperties: {}, variants: [] };
         }
     }));
 

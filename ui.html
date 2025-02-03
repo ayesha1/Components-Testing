@@ -120,27 +120,39 @@
                         return;
                     }
 
-                    const { name, link, variants } = data[selectedIndex];
+                    const { name, link, allProperties, variants } = data[selectedIndex];
+
                     output.innerHTML = `
                             <h3>${name}</h3>
                             <p><strong>Figma Link:</strong> <a href="${link}" target="_blank">${link}</a></p>
+                            <p><strong>Properties:</strong></p>
+                            <ul>
+                                ${Object.entries(allProperties).map(([key, values]) => `
+                                    <li><strong>${key}:</strong> ${Array.from(values).join(", ")}</li>
+                                `).join("")}
+                            </ul>
                             <table>
                                 <tr>
+                                    <th>Preview</th>
                                     <th>Variant</th>
                                     <th>Properties</th>
-                                    <th>Preview</th>
+                                    <th>Instance Count</th>
                                 </tr>
-                                ${variants.map(({ name, properties, image }) => `
+                                ${variants.map(({ name, properties, image, instanceCount, instanceParents }) => `
                                     <tr>
-                                        <td>${name}</td>
-                                        <td>
-                                            ${Object.entries(properties).map(([key, value]) =>
-                        `<strong>${key}:</strong> ${value}`).join("<br>")}
-                                        </td>
                                         <td class="image-preview">
                                             ${image ? `<img src="${image}" alt="Variant preview"><br>
                                             <a class="download-btn" href="${image}" download="${name}.png">Download</a>`
                             : "No Image"}
+                                        </td>
+                                        <td>${name}</td>
+                                        <td>
+                                            ${Object.entries(properties).map(([key, value]) =>
+                                `<strong>${key}:</strong> ${value}`).join("<br>")}
+                                        </td>
+                                        <td>
+                                            <strong>${instanceCount}</strong> instances found<br>
+                                            ${instanceParents.length > 0 ? instanceParents.join(", ") : "No instances"}
                                         </td>
                                     </tr>
                                 `).join("")}
