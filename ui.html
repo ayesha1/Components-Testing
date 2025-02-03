@@ -126,21 +126,21 @@
                             <p><strong>Figma Link:</strong> <a href="${link}" target="_blank">${link}</a></p>
                             <table>
                                 <tr>
+                                    <th>Preview</th>
                                     <th>Variant</th>
                                     <th>Properties</th>
-                                    <th>Preview</th>
                                 </tr>
                                 ${variants.map(({ name, properties, image }) => `
                                     <tr>
-                                        <td>${name}</td>
-                                        <td>
-                                            ${Object.entries(properties).map(([key, value]) =>
-                        `<strong>${key}:</strong> ${value}`).join("<br>")}
-                                        </td>
                                         <td class="image-preview">
                                             ${image ? `<img src="${image}" alt="Variant preview"><br>
                                             <a class="download-btn" href="${image}" download="${name}.png">Download</a>`
                             : "No Image"}
+                                        </td>
+                                        <td>${name}</td>
+                                        <td>
+                                            ${Object.entries(properties).map(([key, value]) =>
+                                `<strong>${key}:</strong> ${value}`).join("<br>")}
                                         </td>
                                     </tr>
                                 `).join("")}
