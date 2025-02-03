@@ -26,19 +26,27 @@ const getComponentVariants = async () => {
                 currentNode = currentNode.parent;
             }
 
+            let allProperties = {};
             const variants = await Promise.all(componentSet.children.map(async (variant) => {
                 const variantImage = await saveNodeAsPNG(variant);
+                const properties = variant.variantProperties || {};
+
+                Object.entries(properties).forEach(([key, value]) => {
+                    if (!allProperties[key]) allProperties[key] = new Set();
+                    allProperties[key].add(value);
+                });
+
                 return {
                     name: variant.name,
-                    properties: variant.variantProperties || {},
+                    properties,
                     image: variantImage
                 };
             }));
 
-            return { name: componentSet.name, link: frameLink, variants };
+            return { name: componentSet.name, link: frameLink, properties: allProperties, variants };
         } catch (error) {
             console.error(`Error processing component set: ${componentSet.name}`, error);
-            return { name: componentSet.name, link: "Not Available", variants: [] };
+            return { name: componentSet.name, link: "Not Available", properties: {}, variants: [] };
         }
     }));
 

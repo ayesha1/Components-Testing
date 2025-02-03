@@ -120,10 +120,17 @@
                         return;
                     }
 
-                    const { name, link, variants } = data[selectedIndex];
+                    const { name, link, properties, variants } = data[selectedIndex];
+
                     output.innerHTML = `
                             <h3>${name}</h3>
                             <p><strong>Figma Link:</strong> <a href="${link}" target="_blank">${link}</a></p>
+                            <p><strong>Properties:</strong></p>
+                            <ul>
+                                ${Object.entries(properties).map(([key, values]) => `
+                                    <li><strong>${key}:</strong> ${Array.from(values).join(", ")}</li>
+                                `).join("")}
+                            </ul>
                             <table>
                                 <tr>
                                     <th>Preview</th>
