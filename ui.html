@@ -136,8 +136,9 @@
                                     <th>Preview</th>
                                     <th>Variant</th>
                                     <th>Properties</th>
+                                    <th>Instance Count</th>
                                 </tr>
-                                ${variants.map(({ name, properties, image }) => `
+                                ${variants.map(({ name, properties, image, instanceCount, instanceParents }) => `
                                     <tr>
                                         <td class="image-preview">
                                             ${image ? `<img src="${image}" alt="Variant preview"><br>
@@ -148,6 +149,10 @@
                                         <td>
                                             ${Object.entries(properties).map(([key, value]) =>
                                 `<strong>${key}:</strong> ${value}`).join("<br>")}
+                                        </td>
+                                        <td>
+                                            <strong>${instanceCount}</strong> instances found<br>
+                                            ${instanceParents.length > 0 ? instanceParents.join(", ") : "No instances"}
                                         </td>
                                     </tr>
                                 `).join("")}

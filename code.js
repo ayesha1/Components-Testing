@@ -1,4 +1,4 @@
-figma.showUI(__html__, { width: 550, height: 750 });
+figma.showUI(__html__, { width: 600, height: 750 });
 
 const saveNodeAsPNG = async (node) => {
     try {
@@ -36,10 +36,16 @@ const getComponentVariants = async () => {
                     allProperties[key].add(value);
                 });
 
+                const instances = figma.currentPage.findAll(node =>
+                    node.type === "INSTANCE" && node.mainComponent === variant
+                );
+
                 return {
                     name: variant.name,
                     properties,
-                    image: variantImage
+                    image: variantImage,
+                    instanceCount: instances.length,
+                    instanceParents: Array.from(new Set(instances.map(inst => inst.parent ? inst.parent.name : "Unknown")))
                 };
             }));
 
