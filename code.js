@@ -49,10 +49,10 @@ const getComponentVariants = async () => {
                 };
             }));
 
-            return { name: componentSet.name, link: frameLink, properties: allProperties, variants };
+            return { name: componentSet.name, link: frameLink, allProperties, variants };
         } catch (error) {
             console.error(`Error processing component set: ${componentSet.name}`, error);
-            return { name: componentSet.name, link: "Not Available", properties: {}, variants: [] };
+            return { name: componentSet.name, link: "Not Available", allProperties: {}, variants: [] };
         }
     }));
 
