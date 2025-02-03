@@ -5,25 +5,104 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Component Variants</title>
     <style>
-        body { font-family: Arial, sans-serif; }
-        select, table { width: 100%; margin-bottom: 10px; }
-        table { border-collapse: collapse; }
-        th, td { border: 1px solid black; padding: 8px; text-align: left; }
-        img { max-width: 100px; }
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+
+        h2 {
+            text-align: center;
+            color: #333;
+        }
+
+        select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+            background-color: white;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #4CAF50;
+            color: white;
+            text-align: center;
+        }
+
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+
+        .image-preview {
+            text-align: center;
+        }
+
+        img {
+            max-width: 100px;
+            border-radius: 5px;
+        }
+
+        .download-btn {
+            display: inline-block;
+            margin-top: 5px;
+            padding: 5px 10px;
+            background: #007BFF;
+            color: white;
+            text-decoration: none;
+            font-size: 12px;
+            border-radius: 3px;
+        }
+
+            .download-btn:hover {
+                background: #0056b3;
+            }
+
+        .close-btn {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            background: #ff4b5c;
+            color: white;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+            .close-btn:hover {
+                background: #c92a3b;
+            }
     </style>
 </head>
 <body>
     <h2>Component Variants</h2>
-    
+
     <label for="componentSelect">Select a Component:</label>
     <select id="componentSelect"></select>
 
     <div id="output"></div>
 
-    <button onclick="parent.postMessage({ type: 'close-plugin' }, '*')">Close</button>
+    <button class="close-btn" onclick="parent.postMessage({ type: 'close-plugin' }, '*')">Close</button>
 
-    <script>
-        window.onmessage = (event) => {
+    <script>window.onmessage = (event) => {
             const { type, data } = event.data.pluginMessage;
             if (type === 'displayVariants') {
                 const select = document.getElementById('componentSelect');
@@ -43,28 +122,32 @@
 
                     const { name, link, variants } = data[selectedIndex];
                     output.innerHTML = `
-                        <h3>${name}</h3>
-                        <p><strong>Figma Link:</strong> <a href="${link}" target="_blank">${link}</a></p>
-                        <table>
-                            <tr>
-                                <th>Variant</th>
-                                <th>Properties</th>
-                                <th>Image</th>
-                            </tr>
-                            ${variants.map(({ name, properties, image }) => `
+                            <h3>${name}</h3>
+                            <p><strong>Figma Link:</strong> <a href="${link}" target="_blank">${link}</a></p>
+                            <table>
                                 <tr>
-                                    <td>${name}</td>
-                                    <td>
-                                        ${Object.entries(properties).map(([key, value]) => `<strong>${key}:</strong> ${value}`).join("<br>")}
-                                    </td>
-                                    <td>${image ? `<img src="${image}" alt="Variant preview">` : "No Image"}</td>
+                                    <th>Variant</th>
+                                    <th>Properties</th>
+                                    <th>Preview</th>
                                 </tr>
-                            `).join("")}
-                        </table>
-                    `;
+                                ${variants.map(({ name, properties, image }) => `
+                                    <tr>
+                                        <td>${name}</td>
+                                        <td>
+                                            ${Object.entries(properties).map(([key, value]) =>
+                        `<strong>${key}:</strong> ${value}`).join("<br>")}
+                                        </td>
+                                        <td class="image-preview">
+                                            ${image ? `<img src="${image}" alt="Variant preview"><br>
+                                            <a class="download-btn" href="${image}" download="${name}.png">Download</a>`
+                            : "No Image"}
+                                        </td>
+                                    </tr>
+                                `).join("")}
+                            </table>
+                        `;
                 });
             }
-        };
-    </script>
+        };</script>
 </body>
 </html>
