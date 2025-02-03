@@ -7,139 +7,147 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            padding: 10px;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+
+        h2 {
+            text-align: center;
+            color: #333;
         }
 
         select {
             width: 100%;
-            padding: 8px;
-            margin-bottom: 10px;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+            background-color: white;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 10px;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
         }
 
         th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
+            padding: 12px;
             text-align: left;
+            border-bottom: 1px solid #ddd;
         }
 
         th {
-            background-color: #f4f4f4;
+            background-color: #4CAF50;
+            color: white;
+            text-align: center;
         }
 
-        .close-btn {
-            margin-top: 10px;
-            padding: 8px;
-            background: red;
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+
+        .image-preview {
+            text-align: center;
+        }
+
+        img {
+            max-width: 100px;
+            border-radius: 5px;
+        }
+
+        .download-btn {
+            display: inline-block;
+            margin-top: 5px;
+            padding: 5px 10px;
+            background: #007BFF;
             color: white;
+            text-decoration: none;
+            font-size: 12px;
+            border-radius: 3px;
+        }
+
+            .download-btn:hover {
+                background: #0056b3;
+            }
+
+        .close-btn {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            background: #ff4b5c;
+            color: white;
+            font-size: 16px;
             border: none;
             cursor: pointer;
+            border-radius: 5px;
         }
+
+            .close-btn:hover {
+                background: #c92a3b;
+            }
     </style>
 </head>
 <body>
     <h2>Component Variants</h2>
 
-    <!-- Dropdown for component selection -->
-    <label for="componentSelect">Select Component:</label>
-    <select id="componentSelect">
-        <option value="all">Show All</option>
-    </select>
+    <label for="componentSelect">Select a Component:</label>
+    <select id="componentSelect"></select>
 
-    <table>
-        <thead>
-            <tr>
-                <th>Component Name</th>
-                <th>Properties</th>
-                <th>Values</th>
-                <th>Instances</th>
-                <th>Frame Link</th>
-            </tr>
-        </thead>
-        <tbody id="variantTable"></tbody>
-    </table>
-    <button class="close-btn" onclick="closePlugin()">Close</button>
+    <div id="output"></div>
 
-    <script>let allVariants = [];
+    <button class="close-btn" onclick="parent.postMessage({ type: 'close-plugin' }, '*')">Close</button>
 
-        window.onmessage = (event) => {
-            if (event.data.pluginMessage.type === "displayVariants") {
-                allVariants = event.data.pluginMessage.data;
-                populateDropdown(allVariants);
-                displayVariants(allVariants);
-            }
-        };
+    <script>window.onmessage = (event) => {
+            const { type, data } = event.data.pluginMessage;
+            if (type === 'displayVariants') {
+                const select = document.getElementById('componentSelect');
+                const output = document.getElementById('output');
 
-        function populateDropdown(variants) {
-            const select = document.getElementById("componentSelect");
-            select.innerHTML = '<option value="all">Show All</option>';
-
-            variants.forEach(component => {
-                const option = document.createElement("option");
-                option.value = component.name;
-                option.textContent = component.name;
-                select.appendChild(option);
-            });
-
-            select.addEventListener("change", filterVariants);
-        }
-
-        function filterVariants() {
-            const selectedComponent = document.getElementById("componentSelect").value;
-            if (selectedComponent === "all") {
-                displayVariants(allVariants);
-            } else {
-                const filtered = allVariants.filter(component => component.name === selectedComponent);
-                displayVariants(filtered);
-            }
-        }
-
-        function displayVariants(variants) {
-            const tableBody = document.getElementById("variantTable");
-            tableBody.innerHTML = "";
-
-            variants.forEach(component => {
-                component.variants.forEach(variant => {
-                    const row = document.createElement("tr");
-
-                    const nameCell = document.createElement("td");
-                    nameCell.textContent = component.name;
-
-                    const propertiesCell = document.createElement("td");
-                    propertiesCell.innerHTML = Object.keys(variant.properties).join("<br>");
-
-                    const valuesCell = document.createElement("td");
-                    valuesCell.innerHTML = Object.entries(variant.properties)
-                        .map(([key, values]) => values.map(value => `• ${value}`).join("<br>"))
-                        .join("<br>");
-
-                    const instancesCell = document.createElement("td");
-                    instancesCell.innerHTML = `Count: ${component.instanceCount} <br> Parent: ${component.instanceParents.join(", ")}`;
-
-                    const linkCell = document.createElement("td");
-                    const link = document.createElement("a");
-                    link.href = component.link;
-                    link.textContent = "View in Figma";
-                    link.target = "_blank";
-                    linkCell.appendChild(link);
-
-                    row.appendChild(nameCell);
-                    row.appendChild(propertiesCell);
-                    row.appendChild(valuesCell);
-                    row.appendChild(instancesCell);
-                    row.appendChild(linkCell);
-                    tableBody.appendChild(row);
+                select.innerHTML = '<option value="">Select a component</option>';
+                data.forEach(({ name }, index) => {
+                    select.innerHTML += `<option value="${index}">${name}</option>`;
                 });
-            });
-        }
 
-        function closePlugin() {
-            parent.postMessage({ pluginMessage: { type: "close-plugin" } }, "*");
-        }</script>
+                select.addEventListener('change', () => {
+                    const selectedIndex = select.value;
+                    if (selectedIndex === "") {
+                        output.innerHTML = "";
+                        return;
+                    }
+
+                    const { name, link, variants } = data[selectedIndex];
+                    output.innerHTML = `
+                            <h3>${name}</h3>
+                            <p><strong>Figma Link:</strong> <a href="${link}" target="_blank">${link}</a></p>
+                            <table>
+                                <tr>
+                                    <th>Variant</th>
+                                    <th>Properties</th>
+                                    <th>Preview</th>
+                                </tr>
+                                ${variants.map(({ name, properties, image }) => `
+                                    <tr>
+                                        <td>${name}</td>
+                                        <td>
+                                            ${Object.entries(properties).map(([key, value]) =>
+                        `<strong>${key}:</strong> ${value}`).join("<br>")}
+                                        </td>
+                                        <td class="image-preview">
+                                            ${image ? `<img src="${image}" alt="Variant preview"><br>
+                                            <a class="download-btn" href="${image}" download="${name}.png">Download</a>`
+                            : "No Image"}
+                                        </td>
+                                    </tr>
+                                `).join("")}
+                            </table>
+                        `;
+                });
+            }
+        };</script>
 </body>
 </html>
