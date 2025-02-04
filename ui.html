@@ -20,10 +20,6 @@
             display: none;
         }
 
-        .page-selection, .component-selection {
-            text-align: center;
-        }
-
         .page-list {
             list-style: none;
             padding: 0;
@@ -90,6 +86,16 @@
                 background: #c92a3b;
             }
 
+        select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+            background-color: white;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
@@ -117,7 +123,7 @@
     </style>
 </head>
 <body>
-    <!-- Page Selection Screen -->
+    <!-- Page Selection -->
     <div id="pageSelection">
         <h2>Select Pages</h2>
         <ul class="page-list" id="pageList"></ul>
@@ -127,7 +133,7 @@
         </div>
     </div>
 
-    <!-- Component Selection & Display Screen -->
+    <!-- Component Selection -->
     <div id="componentSelection" class="hidden">
         <h2>Component Variants</h2>
         <label for="componentSelect">Select a Component:</label>
@@ -185,30 +191,22 @@
                         return;
                     }
 
-                    const { name, link, allProperties, variants } = data[selectedIndex];
+                    const { name, link, variants } = data[selectedIndex];
 
                     output.innerHTML = `
                             <h3>${name}</h3>
                             <p><strong>Figma Link:</strong> <a href="${link}" target="_blank">${link}</a></p>
-                            <p><strong>Properties:</strong></p>
-                            <ul>
-                                ${Object.entries(allProperties).map(([key, values]) => `
-                                    <li><strong>${key}:</strong> ${Array.from(values).join(", ")}</li>
-                                `).join("")}
-                            </ul>
                             <table>
                                 <tr>
                                     <th>Preview</th>
                                     <th>Variant</th>
                                     <th>Properties</th>
-                                    <th>Instance Count</th>
                                 </tr>
-                                ${variants.map(({ name, properties, image, instanceCount, instanceParents }) => `
+                                ${variants.map(({ name, properties }) => `
                                     <tr>
-                                        <td>${image ? `<img src="${image}" alt="Variant preview"><br>` : "No Image"}</td>
+                                        <td>No Image</td>
                                         <td>${name}</td>
                                         <td>${Object.entries(properties).map(([key, value]) => `<strong>${key}:</strong> ${value}`).join("<br>")}</td>
-                                        <td><strong>${instanceCount}</strong> instances found<br>${instanceParents.length > 0 ? instanceParents.join(", ") : "No instances"}</td>
                                     </tr>
                                 `).join("")}
                             </table>

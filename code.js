@@ -16,10 +16,7 @@ const getComponentVariants = async (selectedPages) => {
     const results = await Promise.all(componentSets.map(async (componentSet) => {
         const variants = await Promise.all(componentSet.children.map(async (variant) => ({
             name: variant.name,
-            properties: variant.variantProperties || {},
-            image: "",
-            instanceCount: 0,
-            instanceParents: []
+            properties: variant.variantProperties || {}
         })));
 
         return { name: componentSet.name, variants };
