@@ -11,19 +11,60 @@
             background-color: #f9f9f9;
         }
 
-        h2 {
+        h2, h3 {
             text-align: center;
             color: #333;
         }
 
-        select {
+        .step-container {
+            display: none;
+            flex-direction: column;
+            align-items: center;
             width: 100%;
+        }
+
+        .page-list {
+            list-style: none;
+            padding: 0;
+            width: 100%;
+            text-align: left;
+        }
+
+            .page-list li {
+                display: flex;
+                align-items: center;
+                margin: 5px 0;
+                padding: 5px;
+                border: 1px solid #ccc;
+                border-radius: 5px;
+                background-color: white;
+            }
+
+            .page-list input {
+                margin-right: 10px;
+                transform: scale(1.2);
+            }
+
+        button {
             padding: 10px;
-            margin-bottom: 15px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
             font-size: 16px;
-            background-color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .next-btn {
+            background-color: #4CAF50;
+            color: white;
+            width: 100px;
+            margin-top: 15px;
+        }
+
+        .close-btn {
+            background: #ff4b5c;
+            color: white;
+            width: 100%;
+            margin-top: 10px;
         }
 
         table {
@@ -44,67 +85,45 @@
         th {
             background-color: #4CAF50;
             color: white;
-            text-align: center;
         }
 
-        tr:hover {
-            background-color: #f1f1f1;
-        }
-
-        .image-preview {
-            text-align: center;
-        }
-
-        img {
+        .image-preview img {
             max-width: 100px;
             border-radius: 5px;
         }
-
-        .download-btn {
-            display: inline-block;
-            margin-top: 5px;
-            padding: 5px 10px;
-            background: #007BFF;
-            color: white;
-            text-decoration: none;
-            font-size: 12px;
-            border-radius: 3px;
-        }
-
-            .download-btn:hover {
-                background: #0056b3;
-            }
-
-        .close-btn {
-            width: 100%;
-            padding: 10px;
-            margin-top: 10px;
-            background: #ff4b5c;
-            color: white;
-            font-size: 16px;
-            border: none;
-            cursor: pointer;
-            border-radius: 5px;
-        }
-
-            .close-btn:hover {
-                background: #c92a3b;
-            }
     </style>
 </head>
 <body>
-    <h2>Component Variants</h2>
+    <div class="step-container" id="step1" style="display: flex;">
+        <h2>Select Pages</h2>
+        <ul class="page-list" id="pageList"></ul>
+        <button class="next-btn" onclick="goToStep2()">Next</button>
+    </div>
 
-    <label for="componentSelect">Select a Component:</label>
-    <select id="componentSelect"></select>
+    <div class="step-container" id="step2">
+        <h2>Component Variants</h2>
+        <label for="componentSelect">Select a Component:</label>
+        <select id="componentSelect"></select>
+        <div id="output"></div>
+        <button class="close-btn" onclick="parent.postMessage({ type: 'close-plugin' }, '*')">Close</button>
+    </div>
 
-    <div id="output"></div>
+    <script>let selectedPages = [];
 
-    <button class="close-btn" onclick="parent.postMessage({ type: 'close-plugin' }, '*')">Close</button>
-
-    <script>window.onmessage = (event) => {
+        window.onmessage = (event) => {
             const { type, data } = event.data.pluginMessage;
-            if (type === 'displayVariants') {
+            if (type === 'displayPages') {
+                const pageList = document.getElementById('pageList');
+                pageList.innerHTML = '';
+                data.forEach((page, index) => {
+                    const listItem = document.createElement("li");
+                    listItem.innerHTML = `<input type="checkbox" value="${index}"> ${page}`;
+                    pageList.appendChild(listItem);
+                });
+            } else if (type === 'displayVariants') {
+                document.getElementById('step1').style.display = 'none';
+                document.getElementById('step2').style.display = 'flex';
+
                 const select = document.getElementById('componentSelect');
                 const output = document.getElementById('output');
 
@@ -121,16 +140,9 @@
                     }
 
                     const { name, link, allProperties, variants } = data[selectedIndex];
-
                     output.innerHTML = `
                             <h3>${name}</h3>
                             <p><strong>Figma Link:</strong> <a href="${link}" target="_blank">${link}</a></p>
-                            <p><strong>Properties:</strong></p>
-                            <ul>
-                                ${Object.entries(allProperties).map(([key, values]) => `
-                                    <li><strong>${key}:</strong> ${Array.from(values).join(", ")}</li>
-                                `).join("")}
-                            </ul>
                             <table>
                                 <tr>
                                     <th>Preview</th>
@@ -138,28 +150,34 @@
                                     <th>Properties</th>
                                     <th>Instance Count</th>
                                 </tr>
-                                ${variants.map(({ name, properties, image, instanceCount, instanceParents }) => `
+                                ${variants.map(({ name, properties, image, instanceCount }) => `
                                     <tr>
                                         <td class="image-preview">
-                                            ${image ? `<img src="${image}" alt="Variant preview"><br>
-                                            <a class="download-btn" href="${image}" download="${name}.png">Download</a>`
-                            : "No Image"}
+                                            ${image ? `<img src="${image}" alt="Variant preview">` : "No Image"}
                                         </td>
                                         <td>${name}</td>
-                                        <td>
-                                            ${Object.entries(properties).map(([key, value]) =>
-                                `<strong>${key}:</strong> ${value}`).join("<br>")}
+                                        <td>${Object.entries(properties).map(([key, value]) =>
+                        `<strong>${key}:</strong> ${value}`).join("<br>")}
                                         </td>
-                                        <td>
-                                            <strong>${instanceCount}</strong> instances found<br>
-                                            ${instanceParents.length > 0 ? instanceParents.join(", ") : "No instances"}
-                                        </td>
+                                        <td>${instanceCount}</td>
                                     </tr>
                                 `).join("")}
                             </table>
                         `;
                 });
             }
-        };</script>
+        };
+
+        function goToStep2() {
+            selectedPages = Array.from(document.querySelectorAll('.page-list input:checked'))
+                .map(input => parseInt(input.value));
+
+            if (selectedPages.length === 0) {
+                alert("Please select at least one page.");
+                return;
+            }
+
+            parent.postMessage({ type: "selectedPages", data: selectedPages }, "*");
+        }</script>
 </body>
 </html>

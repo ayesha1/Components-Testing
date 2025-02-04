@@ -1,5 +1,9 @@
 figma.showUI(__html__, { width: 600, height: 750 });
 
+const getAllPages = () => {
+    return figma.root.children.map(page => page.name);
+};
+
 const saveNodeAsPNG = async (node) => {
     try {
         const imageBytes = await node.exportAsync({ format: "PNG" });
@@ -10,63 +14,51 @@ const saveNodeAsPNG = async (node) => {
     }
 };
 
-const getComponentVariants = async () => {
-    const componentSets = figma.currentPage.findAll(node => node.type === "COMPONENT_SET");
+const getComponentVariants = async (selectedPageIndexes) => {
+    const selectedPages = selectedPageIndexes.map(index => figma.root.children[index]);
+
+    const componentSets = selectedPages.flatMap(page =>
+        page.findAll(node => node.type === "COMPONENT_SET")
+    );
 
     const results = await Promise.all(componentSets.map(async (componentSet) => {
-        try {
-            let frameLink = "Not Available";
-            let currentNode = componentSet;
+        let frameLink = `https://www.figma.com/file/${figma.fileKey}?node-id=${encodeURIComponent(componentSet.id)}`;
+        let allProperties = {};
 
-            while (currentNode && currentNode.parent) {
-                if (currentNode.parent.type === "FRAME" || currentNode.parent.type === "PAGE") {
-                    frameLink = `https://www.figma.com/file/${figma.fileKey}?node-id=${encodeURIComponent(currentNode.parent.id)}`;
-                    break;
-                }
-                currentNode = currentNode.parent;
-            }
+        const variants = await Promise.all(componentSet.children.map(async (variant) => {
+            const variantImage = await saveNodeAsPNG(variant);
+            const properties = variant.variantProperties || {};
 
-            let allProperties = {};
-            const variants = await Promise.all(componentSet.children.map(async (variant) => {
-                const variantImage = await saveNodeAsPNG(variant);
-                const properties = variant.variantProperties || {};
+            Object.entries(properties).forEach(([key, value]) => {
+                if (!allProperties[key]) allProperties[key] = new Set();
+                allProperties[key].add(value);
+            });
 
-                Object.entries(properties).forEach(([key, value]) => {
-                    if (!allProperties[key]) allProperties[key] = new Set();
-                    allProperties[key].add(value);
-                });
+            const instances = figma.currentPage.findAll(node =>
+                node.type === "INSTANCE" && node.mainComponent === variant
+            );
 
-                const instances = figma.currentPage.findAll(node =>
-                    node.type === "INSTANCE" && node.mainComponent === variant
-                );
+            return {
+                name: variant.name,
+                properties,
+                image: variantImage,
+                instanceCount: instances.length
+            };
+        }));
 
-                return {
-                    name: variant.name,
-                    properties,
-                    image: variantImage,
-                    instanceCount: instances.length,
-                    instanceParents: Array.from(new Set(instances.map(inst => inst.parent ? inst.parent.name : "Unknown")))
-                };
-            }));
-
-            return { name: componentSet.name, link: frameLink, allProperties, variants };
-        } catch (error) {
-            console.error(`Error processing component set: ${componentSet.name}`, error);
-            return { name: componentSet.name, link: "Not Available", allProperties: {}, variants: [] };
-        }
+        return { name: componentSet.name, link: frameLink, allProperties, variants };
     }));
 
     return results.filter(set => set.variants.length > 0);
 };
 
-getComponentVariants().then(data => {
-    figma.ui.postMessage({ type: "displayVariants", data });
-});
+figma.ui.postMessage({ type: "displayPages", data: getAllPages() });
 
-figma.ui.onmessage = (msg) => {
-    if (msg.type === "close-plugin") {
+figma.ui.onmessage = async (msg) => {
+    if (msg.type === "selectedPages") {
+        const data = await getComponentVariants(msg.data);
+        figma.ui.postMessage({ type: "displayVariants", data });
+    } else if (msg.type === "close-plugin") {
         figma.closePlugin();
     }
 };
-
-figma.notify("Scanning components for variants...");
