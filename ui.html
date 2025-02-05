@@ -141,6 +141,13 @@
                 return;
             }
 
+            // Function to update the selected page count
+            function updateSelectedCount() {
+                const selectedCount = document.querySelectorAll(".page-checkbox:checked").length;
+                document.getElementById("selectedCount").innerText = `(${selectedCount}) Selected`;
+            }
+
+
             // Function to display pages in a table
             function displayPages(pages) {
                 if (!pages || !Array.isArray(pages)) {
