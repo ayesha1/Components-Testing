@@ -89,24 +89,24 @@
 
     <script>window.onmessage = (event) => {
             const { type, data } = event.data.pluginMessage;
+            console.log('Received data:', data); // Log the received data
 
             if (type === 'displayPages') {
                 const pageList = document.getElementById('pageList');
-                pageList.innerHTML = ''; // Clear existing rows
+                pageList.innerHTML = ''; // Clear any existing rows
 
-                // Display each page from the Figma file
-                data.pages.forEach(page => {
+                // Display each page name from the Figma file
+                data.pages.forEach(pageName => {
                     const row = document.createElement('tr');
 
                     const checkboxCell = document.createElement('td');
                     const checkbox = document.createElement('input');
                     checkbox.type = 'checkbox';
-                    checkbox.id = page.id;
-                    checkbox.value = page.id;
+                    checkbox.value = pageName;
                     checkboxCell.appendChild(checkbox);
 
                     const nameCell = document.createElement('td');
-                    nameCell.innerText = page.name;
+                    nameCell.innerText = pageName;
 
                     row.appendChild(checkboxCell);
                     row.appendChild(nameCell);
