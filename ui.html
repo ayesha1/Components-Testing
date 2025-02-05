@@ -90,9 +90,21 @@
             #componentTable tr:hover {
                 background-color: #f1f1f1;
             }
+
+        select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+            background-color: white;
+        }
     </style>
 </head>
 <body>
+
+    <!-- Page Selection Screen -->
     <div id="pageSelection">
         <div class="file-header">
             <div class="file-name" id="fileName">Studio Design</div>
@@ -111,10 +123,30 @@
         </table>
     </div>
 
+    <!-- Component Selection Screen -->
     <div id="componentSelection" class="hidden">
         <button id="backButton">Back</button>
         <h2>Component Variants</h2>
-        <div id="componentContainer"></div>
+
+        <!-- Dropdown to select component -->
+        <label for="componentSelect">Select a Component:</label>
+        <select id="componentSelect">
+            <option value="">Select a component</option>
+        </select>
+
+        <!-- Table for components -->
+        <table id="componentTable">
+            <thead>
+                <tr>
+                    <th>Preview</th>
+                    <th>Properties</th>
+                    <th>Figma Link</th>
+                    <th>Instances & Location</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="componentList"></tbody>
+        </table>
     </div>
 
     <script>window.onmessage = (event) => {
@@ -133,11 +165,17 @@
             if (pluginMessage.type === "displayPages") {
                 displayPages(pluginMessage.pages);
             } else if (pluginMessage.type === "displayComponents") {
-                displayComponents(pluginMessage.data);
+                populateComponentDropdown(pluginMessage.data);
             }
         };
 
         function displayPages(pages) {
+            if (!pages || !Array.isArray(pages)) {
+                console.error("Error: Pages array is missing or invalid.");
+                return;
+            }
+
+            console.log("Displaying pages:", pages);
             const pageList = document.getElementById("pageList");
             pageList.innerHTML = "";
             pages.forEach((pageName) => {
@@ -174,48 +212,67 @@
                 return;
             }
 
+            console.log("Selected pages:", selectedPages);
             document.getElementById("pageSelection").classList.add("hidden");
             document.getElementById("componentSelection").classList.remove("hidden");
 
             parent.postMessage({ pluginMessage: { type: "pagesSelected", pages: selectedPages } }, "*");
         });
 
-        function displayComponents(data) {
-            const container = document.getElementById("componentContainer");
-            container.innerHTML = "";
+        document.getElementById("backButton").addEventListener("click", () => {
+            document.getElementById("componentSelection").classList.add("hidden");
+            document.getElementById("pageSelection").classList.remove("hidden");
+        });
+
+        function populateComponentDropdown(data) {
+            console.log("Populating dropdown with component data:", data);
+            const componentSelect = document.getElementById("componentSelect");
+            componentSelect.innerHTML = '<option value="">Select a component</option>';
 
             data.forEach(component => {
-                const componentSection = document.createElement("div");
-                componentSection.innerHTML = `<h3>${component.name}</h3>`;
-                const table = document.createElement("table");
+                const option = document.createElement("option");
+                option.value = component.name;
+                option.textContent = component.name;
+                componentSelect.appendChild(option);
+            });
 
-                table.innerHTML = `
-                        <thead>
-                            <tr>
-                                <th>Preview</th>
-                                <th>Properties</th>
-                                <th>Figma Link</th>
-                                <th>Instances & Location</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${component.variants.map(variant => `
-                                <tr>
-                                    <td>
-                                        ${variant.image ? `<img src="${variant.image}" style="max-width: 100px;"> <br> <a href="${variant.image}" download>Download</a>` : "No Image"}
-                                    </td>
-                                    <td>${Object.entries(variant.properties).map(([key, value]) => `<strong>${key}:</strong> ${value}`).join("<br>")}</td>
-                                    <td><a href="${component.link}" target="_blank">Open in Figma</a></td>
-                                    <td>${variant.instanceCount} instances found<br>${variant.instanceParents.length ? variant.instanceParents.join(", ") : "No instances"}</td>
-                                    <td>${variant.status}</td>
-                                </tr>
-                            `).join("")}
-                        </tbody>
-                    `;
+            componentSelect.addEventListener("change", () => {
+                displayComponentTable(data, componentSelect.value);
+            });
+        }
 
-                componentSection.appendChild(table);
-                container.appendChild(componentSection);
+        function displayComponentTable(data, selectedComponent) {
+            const componentList = document.getElementById("componentList");
+            componentList.innerHTML = "";
+
+            const selectedData = data.find(component => component.name === selectedComponent);
+            if (!selectedData) return;
+
+            selectedData.variants.forEach(variant => {
+                const row = document.createElement("tr");
+
+                const previewCell = document.createElement("td");
+                previewCell.innerHTML = variant.image
+                    ? `<img src="${variant.image}" alt="Variant preview" style="max-width: 100px;"> <br> <a href="${variant.image}" download>Download</a>`
+                    : "No Image";
+                row.appendChild(previewCell);
+
+                const propertiesCell = document.createElement("td");
+                propertiesCell.innerHTML = Object.entries(variant.properties)
+                    .map(([key, value]) => `<strong>${key}:</strong> ${value}`)
+                    .join("<br>");
+                row.appendChild(propertiesCell);
+
+                const linkCell = document.createElement("td");
+                linkCell.innerHTML = `<a href="${selectedData.link}" target="_blank">Open in Figma</a>`;
+                row.appendChild(linkCell);
+
+                const instancesCell = document.createElement("td");
+                instancesCell.innerHTML = `<strong>${variant.instanceCount}</strong> instances found<br>
+                            ${variant.instanceParents.length > 0 ? variant.instanceParents.join(", ") : "No instances"}`;
+                row.appendChild(instancesCell);
+
+                componentList.appendChild(row);
             });
         }</script>
 </body>
