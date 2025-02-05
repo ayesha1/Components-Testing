@@ -31,6 +31,11 @@
             color: #333;
         }
 
+        .selected-count {
+            font-size: 16px;
+            color: #007BFF;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
@@ -70,6 +75,7 @@
 <body>
     <div class="file-header">
         <div class="file-name" id="fileName">Studio Design</div>
+        <div class="selected-count" id="selectedCount">(0) Selected</div>
         <button id="nextButton">Next</button>
     </div>
 
@@ -84,10 +90,8 @@
     </table>
 
     <script>window.onmessage = (event) => {
-            // Log the entire received message for debugging
             console.log("Received message:", event.data);
 
-            // Ensure pluginMessage exists before accessing properties
             if (!event.data || !event.data.pluginMessage) {
                 console.error("Error: No pluginMessage received.");
                 return;
@@ -95,25 +99,21 @@
 
             const { type, pages } = event.data.pluginMessage;
 
-            // Ensure correct message type
             if (type !== "displayPages") {
                 console.error("Error: Unexpected message type received:", type);
                 return;
             }
 
-            // Ensure pages is a valid array
             if (!pages || !Array.isArray(pages)) {
                 console.error("Error: Invalid or missing pages array.");
                 return;
             }
 
-            console.log("Pages to display:", pages); // Log pages for verification
+            console.log("Pages to display:", pages);
 
-            // Render the pages in the table
             const pageList = document.getElementById("pageList");
-            pageList.innerHTML = ""; // Clear any existing rows
+            pageList.innerHTML = "";
 
-            // Loop over the pages and create rows in the table
             pages.forEach((pageName) => {
                 const row = document.createElement("tr");
 
@@ -121,7 +121,10 @@
                 const checkbox = document.createElement("input");
                 checkbox.type = "checkbox";
                 checkbox.value = pageName;
-                checkbox.classList.add("page-checkbox"); // Class for easier selection
+                checkbox.classList.add("page-checkbox");
+
+                checkbox.addEventListener("change", updateSelectedCount);
+
                 checkboxCell.appendChild(checkbox);
 
                 const nameCell = document.createElement("td");
@@ -133,7 +136,11 @@
             });
         };
 
-        // Handle the "Next" button click
+        function updateSelectedCount() {
+            const selectedCount = document.querySelectorAll(".page-checkbox:checked").length;
+            document.getElementById("selectedCount").innerText = `(${selectedCount}) Selected`;
+        }
+
         document.getElementById("nextButton").addEventListener("click", () => {
             const selectedPages = Array.from(document.querySelectorAll(".page-checkbox:checked"))
                 .map((checkbox) => checkbox.value);
