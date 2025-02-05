@@ -3,12 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Component Variants</title>
+    <title>Select Pages</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             padding: 20px;
             background-color: #f9f9f9;
+            max-width: 900px;
+            margin: 0 auto;
         }
 
         h2 {
@@ -16,70 +18,37 @@
             color: #333;
         }
 
-        select {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 15px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            font-size: 16px;
-            background-color: white;
+        .file-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
         }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+        .file-name {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
         }
 
-        th, td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
+        .page-list {
+            margin-bottom: 20px;
         }
 
-        th {
-            background-color: #4CAF50;
-            color: white;
-            text-align: center;
-        }
-
-        tr:hover {
-            background-color: #f1f1f1;
-        }
-
-        .image-preview {
-            text-align: center;
-        }
-
-        img {
-            max-width: 100px;
-            border-radius: 5px;
-        }
-
-        .download-btn {
+        .page-list label {
             display: inline-block;
-            margin-top: 5px;
-            padding: 5px 10px;
-            background: #007BFF;
-            color: white;
-            text-decoration: none;
-            font-size: 12px;
-            border-radius: 3px;
+            margin: 5px 15px 5px 0;
+            cursor: pointer;
         }
 
-            .download-btn:hover {
-                background: #0056b3;
-            }
+        .checkbox-container {
+            display: flex;
+            flex-wrap: wrap;
+        }
 
-        .close-btn {
-            width: 100%;
-            padding: 10px;
-            margin-top: 10px;
-            background: #ff4b5c;
+        button {
+            padding: 10px 20px;
+            background-color: #007BFF;
             color: white;
             font-size: 16px;
             border: none;
@@ -87,79 +56,65 @@
             border-radius: 5px;
         }
 
-            .close-btn:hover {
-                background: #c92a3b;
-            }
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #nextButton {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+        }
     </style>
 </head>
 <body>
-    <h2>Component Variants</h2>
+    <div class="file-header">
+        <div class="file-name" id="fileName">File: Loading...</div>
+        <button id="nextButton">Next</button>
+    </div>
 
-    <label for="componentSelect">Select a Component:</label>
-    <select id="componentSelect"></select>
+    <div class="page-list" id="pageList"></div>
 
-    <div id="output"></div>
+    <script>
+        // Example data for pages in the file (you can replace this with actual data dynamically)
+        const pages = [
+            { id: 'page1', name: '1.0 Release - WORKING' },
+            { id: 'page2', name: 'E-Commerce Component [IR-6675]' },
+            { id: 'page3', name: 'Scene Linking + Portals [IR-6501]' },
+            { id: 'page4', name: 'Component Panels [IR-5636]' },
+            { id: 'page5', name: 'Help Text in Properties Panels [IR-5463]' }
+        ];
 
-    <button class="close-btn" onclick="parent.postMessage({ type: 'close-plugin' }, '*')">Close</button>
+        // Set the file name dynamically (you can replace this with actual file name from Figma API)
+        const fileName = 'Sample File Name';  // Replace with actual file name from the Figma file
+        document.getElementById('fileName').innerText = `File: ${fileName}`;
 
-    <script>window.onmessage = (event) => {
-            const { type, data } = event.data.pluginMessage;
-            if (type === 'displayVariants') {
-                const select = document.getElementById('componentSelect');
-                const output = document.getElementById('output');
+        // Generate checkboxes for pages
+        const pageList = document.getElementById('pageList');
+        const checkboxContainer = document.createElement('div');
+        checkboxContainer.classList.add('checkbox-container');
+        pages.forEach(page => {
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.id = page.id;
+            checkbox.value = page.id;
 
-                select.innerHTML = '<option value="">Select a component</option>';
-                data.forEach(({ name }, index) => {
-                    select.innerHTML += `<option value="${index}">${name}</option>`;
-                });
+            const label = document.createElement('label');
+            label.setAttribute('for', page.id);
+            label.innerText = page.name;
 
-                select.addEventListener('change', () => {
-                    const selectedIndex = select.value;
-                    if (selectedIndex === "") {
-                        output.innerHTML = "";
-                        return;
-                    }
+            checkboxContainer.appendChild(checkbox);
+            checkboxContainer.appendChild(label);
+        });
+        pageList.appendChild(checkboxContainer);
 
-                    const { name, link, allProperties, variants } = data[selectedIndex];
-
-                    output.innerHTML = `
-                            <h3>${name}</h3>
-                            <p><strong>Figma Link:</strong> <a href="${link}" target="_blank">${link}</a></p>
-                            <p><strong>Properties:</strong></p>
-                            <ul>
-                                ${Object.entries(allProperties).map(([key, values]) => `
-                                    <li><strong>${key}:</strong> ${Array.from(values).join(", ")}</li>
-                                `).join("")}
-                            </ul>
-                            <table>
-                                <tr>
-                                    <th>Preview</th>
-                                    <th>Variant</th>
-                                    <th>Properties</th>
-                                    <th>Instance Count</th>
-                                </tr>
-                                ${variants.map(({ name, properties, image, instanceCount, instanceParents }) => `
-                                    <tr>
-                                        <td class="image-preview">
-                                            ${image ? `<img src="${image}" alt="Variant preview"><br>
-                                            <a class="download-btn" href="${image}" download="${name}.png">Download</a>`
-                            : "No Image"}
-                                        </td>
-                                        <td>${name}</td>
-                                        <td>
-                                            ${Object.entries(properties).map(([key, value]) =>
-                                `<strong>${key}:</strong> ${value}`).join("<br>")}
-                                        </td>
-                                        <td>
-                                            <strong>${instanceCount}</strong> instances found<br>
-                                            ${instanceParents.length > 0 ? instanceParents.join(", ") : "No instances"}
-                                        </td>
-                                    </tr>
-                                `).join("")}
-                            </table>
-                        `;
-                });
-            }
-        };</script>
+        // Handle Next button click
+        document.getElementById('nextButton').addEventListener('click', () => {
+            const selectedPages = Array.from(document.querySelectorAll('.checkbox-container input:checked'))
+                .map(checkbox => checkbox.value);
+            console.log('Selected pages:', selectedPages);
+            parent.postMessage({ type: 'pagesSelected', pages: selectedPages }, '*');
+        });
+    </script>
 </body>
 </html>
