@@ -67,16 +67,34 @@
             border-radius: 5px;
         }
 
-        #nextButton:hover, #backButton:hover {
-            background-color: #0056b3;
-        }
+            #nextButton:hover, #backButton:hover {
+                background-color: #0056b3;
+            }
 
         .hidden {
             display: none;
         }
+
+        #componentTable {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+            #componentTable th {
+                background-color: #007BFF;
+                color: white;
+                text-align: center;
+            }
+
+            #componentTable tr:hover {
+                background-color: #f1f1f1;
+            }
     </style>
 </head>
 <body>
+
+    <!-- Page Selection Screen -->
     <div id="pageSelection">
         <div class="file-header">
             <div class="file-name" id="fileName">Studio Design</div>
@@ -95,83 +113,157 @@
         </table>
     </div>
 
+    <!-- Component Selection Screen -->
     <div id="componentSelection" class="hidden">
         <button id="backButton">Back</button>
         <h2>Component Variants</h2>
-        <select id="componentSelect"></select>
-        <div id="output"></div>
+
+        <!-- Table for components -->
+        <table id="componentTable">
+            <thead>
+                <tr>
+                    <th>Preview</th>
+                    <th>Component Name</th>
+                    <th>Figma Link</th>
+                    <th>Properties</th>
+                    <th>Instances Found</th>
+                </tr>
+            </thead>
+            <tbody id="componentList"></tbody>
+        </table>
     </div>
 
-    <script>
-    window.onmessage = (event) => {
-        console.log("DEBUG: Received message:", event.data);
+    <script>// Handle incoming messages from Figma
+        window.onmessage = (event) => {
+            console.log("DEBUG: Received message:", event.data);
 
-        if (!event.data || !event.data.pluginMessage) {
-            console.error("Error: Missing pluginMessage.");
-            return;
+            if (!event.data || !event.data.pluginMessage) {
+                console.error("Error: Missing pluginMessage.");
+                return;
+            }
+
+            const pluginMessage = event.data.pluginMessage;
+
+            if (!pluginMessage.type) {
+                console.error("Error: type is missing in pluginMessage:", pluginMessage);
+                return;
+            }
+
+            if (pluginMessage.type === "displayPages") {
+                displayPages(pluginMessage.pages);
+            } else if (pluginMessage.type === "displayComponents") {
+                displayComponents(pluginMessage.data);
+            }
+        };
+
+        // Function to display pages in a table
+        function displayPages(pages) {
+            if (!pages || !Array.isArray(pages)) {
+                console.error("Error: Pages array is missing or invalid.");
+                return;
+            }
+
+            console.log("Displaying pages:", pages);
+
+            const pageList = document.getElementById("pageList");
+            pageList.innerHTML = "";
+            pages.forEach((pageName) => {
+                const row = document.createElement("tr");
+
+                const checkboxCell = document.createElement("td");
+                const checkbox = document.createElement("input");
+                checkbox.type = "checkbox";
+                checkbox.value = pageName;
+                checkbox.classList.add("page-checkbox");
+                checkbox.addEventListener("change", updateSelectedCount);
+                checkboxCell.appendChild(checkbox);
+
+                const nameCell = document.createElement("td");
+                nameCell.innerText = pageName;
+
+                row.appendChild(checkboxCell);
+                row.appendChild(nameCell);
+                pageList.appendChild(row);
+            });
         }
 
-        console.log("DEBUG: Received pluginMessage:", event.data.pluginMessage);
-
-        const pluginMessage = event.data.pluginMessage;
-
-        if (!pluginMessage.type) {
-            console.error("Error: type is missing in pluginMessage:", pluginMessage);
-            return;
+        // Update selected count display
+        function updateSelectedCount() {
+            const selectedCount = document.querySelectorAll(".page-checkbox:checked").length;
+            document.getElementById("selectedCount").innerText = `(${selectedCount}) Selected`;
         }
 
-        const { type, pages } = event.data.pluginMessage;
+        // Handle "Next" button click
+        document.getElementById("nextButton").addEventListener("click", () => {
+            const selectedPages = Array.from(document.querySelectorAll(".page-checkbox:checked"))
+                .map((checkbox) => checkbox.value);
 
-        if (type !=="displayPages") {
-            console.error("Error: Unexpected message type:", type);
-            return;
-        }
+            if (selectedPages.length === 0) {
+                alert("Please select at least one page before proceeding.");
+                return;
+            }
 
-        if (!pages || !Array.isArray(pages)) {
-            console.error("Error: Pages array is missing or invalid.");
-            return;
-        }
+            console.log("Selected pages:", selectedPages);
 
-        console.log("Displaying pages:", pages);
+            // Switch to component selection view
+            document.getElementById("pageSelection").classList.add("hidden");
+            document.getElementById("componentSelection").classList.remove("hidden");
 
-        // Update page list
-        const pageList = document.getElementById("pageList");
-        pageList.innerHTML = "";
-        pages.forEach((pageName) => {
-            const row = document.createElement("tr");
-
-            const checkboxCell = document.createElement("td");
-            const checkbox = document.createElement("input");
-            checkbox.type = "checkbox";
-            checkbox.value = pageName;
-            checkbox.classList.add("page-checkbox");
-            checkboxCell.appendChild(checkbox);
-
-            const nameCell = document.createElement("td");
-            nameCell.innerText = pageName;
-
-            row.appendChild(checkboxCell);
-            row.appendChild(nameCell);
-            pageList.appendChild(row);
+            // Request components from the selected pages
+            parent.postMessage({ pluginMessage: { type: "pagesSelected", pages: selectedPages } }, "*");
         });
-    };
 
-    document.getElementById("nextButton").addEventListener("click", () => {
-        const selectedPages = Array.from(document.querySelectorAll(".page-checkbox:checked"))
-            .map((checkbox) => checkbox.value);
+        // Handle "Back" button click
+        document.getElementById("backButton").addEventListener("click", () => {
+            document.getElementById("componentSelection").classList.add("hidden");
+            document.getElementById("pageSelection").classList.remove("hidden");
+        });
 
-        if (selectedPages.length === 0) {
-            alert("Please select at least one page before proceeding.");
-            return;
-        }
+        // Function to display components in the table
+        function displayComponents(data) {
+            console.log("Displaying component data:", data);
 
-        console.log("Selected pages:", selectedPages);
+            const componentList = document.getElementById("componentList");
+            componentList.innerHTML = ""; // Clear previous data
 
-        // Send message with correct format
-        parent.postMessage({ pluginMessage: { type: "pagesSelected", pages: selectedPages } }, "*");
-    });
-</script>
+            data.forEach(component => {
+                component.variants.forEach(variant => {
+                    const row = document.createElement("tr");
 
+                    // Image preview
+                    const previewCell = document.createElement("td");
+                    previewCell.innerHTML = variant.image
+                        ? `<img src="${variant.image}" alt="Variant preview" style="max-width: 100px;">`
+                        : "No Image";
+                    row.appendChild(previewCell);
+
+                    // Component Name
+                    const nameCell = document.createElement("td");
+                    nameCell.innerText = component.name;
+                    row.appendChild(nameCell);
+
+                    // Figma Link
+                    const linkCell = document.createElement("td");
+                    linkCell.innerHTML = `<a href="${component.link}" target="_blank">Open in Figma</a>`;
+                    row.appendChild(linkCell);
+
+                    // Properties
+                    const propertiesCell = document.createElement("td");
+                    propertiesCell.innerHTML = Object.entries(variant.properties)
+                        .map(([key, value]) => `<strong>${key}:</strong> ${value}`)
+                        .join("<br>");
+                    row.appendChild(propertiesCell);
+
+                    // Instances Found
+                    const instancesCell = document.createElement("td");
+                    instancesCell.innerHTML = `<strong>${variant.instanceCount}</strong> instances found<br>
+                            ${variant.instanceParents.length > 0 ? variant.instanceParents.join(", ") : "No instances"}`;
+                    row.appendChild(instancesCell);
+
+                    componentList.appendChild(row);
+                });
+            });
+        }</script>
 
 </body>
 </html>

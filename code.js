@@ -76,7 +76,7 @@ figma.ui.onmessage = async (msg) => {
         console.log("Sending component data to UI:", componentData);
 
         // Ensure correct message format
-        figma.ui.postMessage({ pluginMessage: { type: "displayComponents", data: componentData } });
+        figma.ui.postMessage({ type: "displayComponents", data: componentData  });
     } else if (type === "close-plugin") {
         figma.closePlugin();
     }
