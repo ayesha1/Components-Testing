@@ -141,6 +141,38 @@
                 return;
             }
 
+            // Function to display pages in a table
+            function displayPages(pages) {
+                if (!pages || !Array.isArray(pages)) {
+                    console.error("Error: Pages array is missing or invalid.");
+                    return;
+                }
+
+                console.log("Displaying pages:", pages);
+
+                const pageList = document.getElementById("pageList");
+                pageList.innerHTML = "";
+                pages.forEach((pageName) => {
+                    const row = document.createElement("tr");
+
+                    const checkboxCell = document.createElement("td");
+                    const checkbox = document.createElement("input");
+                    checkbox.type = "checkbox";
+                    checkbox.value = pageName;
+                    checkbox.classList.add("page-checkbox");
+                    checkbox.addEventListener("change", updateSelectedCount);
+                    checkboxCell.appendChild(checkbox);
+
+                    const nameCell = document.createElement("td");
+                    nameCell.innerText = pageName;
+
+                    row.appendChild(checkboxCell);
+                    row.appendChild(nameCell);
+                    pageList.appendChild(row);
+                });
+            }
+
+
             if (pluginMessage.type === "displayPages") {
                 displayPages(pluginMessage.pages);
             } else if (pluginMessage.type === "displayComponents") {
