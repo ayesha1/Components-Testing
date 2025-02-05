@@ -5,7 +5,7 @@ const pages = figma.root.children
     .map(page => page.name);
 
 console.log("All pages in the file:", pages);
-figma.ui.postMessage({ type: "displayPages", pages  });
+figma.ui.postMessage({ type: "displayPages", pages });
 
 const getComponentVariantsFromPages = async (selectedPages) => {
     console.log("Fetching components from selected pages:", selectedPages);
@@ -40,11 +40,12 @@ const getComponentVariantsFromPages = async (selectedPages) => {
                 });
 
                 return {
-                    name: variant.name,
+                    name: componentSet.name, // Ensure we use the correct name
                     properties,
                     image: "",
                     instanceCount: 0,
-                    instanceParents: []
+                    instanceParents: [],
+                    status: "Unstaged" // Default status
                 };
             }));
 
@@ -61,12 +62,7 @@ const getComponentVariantsFromPages = async (selectedPages) => {
 
 // Listen for messages from the UI
 figma.ui.onmessage = async (msg) => {
-
-    console.log("message recieved in figma", msg);
-    //if (!msg.pluginMessage) {
-    //    console.error("Error: Missing 'pluginMessage' in received data", msg);
-    //    return;
-    //}
+    console.log("Message received in Figma", msg);
 
     const { type, pages } = msg;
 
@@ -75,8 +71,7 @@ figma.ui.onmessage = async (msg) => {
         const componentData = await getComponentVariantsFromPages(pages);
         console.log("Sending component data to UI:", componentData);
 
-        // Ensure correct message format
-        figma.ui.postMessage({ type: "displayComponents", data: componentData  });
+        figma.ui.postMessage({ type: "displayComponents", data: componentData });
     } else if (type === "close-plugin") {
         figma.closePlugin();
     }
