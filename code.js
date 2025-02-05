@@ -1,9 +1,13 @@
-figma.showUI(__html__, { width: 600, height: 750 });
+figma.showUI(__html__, { width: 1000, height: 600 });
 
-// Function to fetch all pages in the file
+// Function to fetch all pages in the Figma file
 const getPages = () => {
     return figma.root.children.map(page => ({ id: page.id, name: page.name }));
 };
+
+// When the plugin starts, send the page names to the UI
+const pages = getPages();
+figma.ui.postMessage({ type: 'displayPages', pages: pages });
 
 // Handle when the UI sends a message about selected pages
 figma.ui.onmessage = (msg) => {
@@ -12,7 +16,7 @@ figma.ui.onmessage = (msg) => {
         const selectedPages = msg.pages;
 
         // Proceed with operations based on the selected pages
-        const pagesData = getPages().filter(page => selectedPages.includes(page.id));
+        const pagesData = pages.filter(page => selectedPages.includes(page.id));
 
         // Send the data back to the UI for the next step (e.g., displaying components)
         figma.ui.postMessage({ type: 'displayComponents', pages: pagesData });
@@ -26,4 +30,4 @@ figma.ui.onmessage = (msg) => {
     }
 };
 
-figma.notify('Please select the pages to proceed...');
+figma.notify('Fetching pages...');

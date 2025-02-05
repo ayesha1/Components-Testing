@@ -87,39 +87,34 @@
         <tbody id="pageList"></tbody>
     </table>
 
-    <script>// Example data for pages in the file (you can replace this with actual data dynamically)
-        const pages = [
-            { id: 'page1', name: '1.0 Release - WORKING' },
-            { id: 'page2', name: 'E-Commerce Component [IR-6675]' },
-            { id: 'page3', name: 'Scene Linking + Portals [IR-6501]' },
-            { id: 'page4', name: 'Component Panels [IR-5636]' },
-            { id: 'page5', name: 'Help Text in Properties Panels [IR-5463]' }
-        ];
+    <script>window.onmessage = (event) => {
+            const { type, data } = event.data.pluginMessage;
 
-        // Set the file name dynamically (replace this with actual file name from Figma API)
-        const fileName = 'Studio Design';  // Replace with actual file name from Figma
-        document.getElementById('fileName').innerText = fileName;
+            if (type === 'displayPages') {
+                const pageList = document.getElementById('pageList');
+                pageList.innerHTML = ''; // Clear existing rows
 
-        // Generate checkboxes for pages in the table
-        const pageList = document.getElementById('pageList');
-        pages.forEach(page => {
-            const row = document.createElement('tr');
+                // Display each page from the Figma file
+                data.pages.forEach(page => {
+                    const row = document.createElement('tr');
 
-            const checkboxCell = document.createElement('td');
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.id = page.id;
-            checkbox.value = page.id;
-            checkboxCell.appendChild(checkbox);
+                    const checkboxCell = document.createElement('td');
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.id = page.id;
+                    checkbox.value = page.id;
+                    checkboxCell.appendChild(checkbox);
 
-            const nameCell = document.createElement('td');
-            nameCell.innerText = page.name;
+                    const nameCell = document.createElement('td');
+                    nameCell.innerText = page.name;
 
-            row.appendChild(checkboxCell);
-            row.appendChild(nameCell);
+                    row.appendChild(checkboxCell);
+                    row.appendChild(nameCell);
 
-            pageList.appendChild(row);
-        });
+                    pageList.appendChild(row);
+                });
+            }
+        };
 
         // Handle Next button click
         document.getElementById('nextButton').addEventListener('click', () => {
