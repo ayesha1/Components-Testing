@@ -57,7 +57,7 @@
             margin-right: 10px;
         }
 
-        #nextButton {
+        #nextButton, #backButton {
             padding: 10px 20px;
             background-color: #007BFF;
             color: white;
@@ -67,92 +67,131 @@
             border-radius: 5px;
         }
 
-            #nextButton:hover {
-                background-color: #0056b3;
-            }
+        #nextButton:hover, #backButton:hover {
+            background-color: #0056b3;
+        }
+
+        .hidden {
+            display: none;
+        }
     </style>
 </head>
 <body>
-    <div class="file-header">
-        <div class="file-name" id="fileName">Studio Design</div>
-        <div class="selected-count" id="selectedCount">(0) Selected</div>
-        <button id="nextButton">Next</button>
+    <div id="pageSelection">
+        <div class="file-header">
+            <div class="file-name" id="fileName">Studio Design</div>
+            <div class="selected-count" id="selectedCount">(0) Selected</div>
+            <button id="nextButton">Next</button>
+        </div>
+
+        <table id="pageTable">
+            <thead>
+                <tr>
+                    <th>Select Page</th>
+                    <th>Page Name</th>
+                </tr>
+            </thead>
+            <tbody id="pageList"></tbody>
+        </table>
     </div>
 
-    <table id="pageTable">
-        <thead>
-            <tr>
-                <th>Select Page</th>
-                <th>Page Name</th>
-            </tr>
-        </thead>
-        <tbody id="pageList"></tbody>
-    </table>
+    <div id="componentSelection" class="hidden">
+        <button id="backButton">Back</button>
+        <h2>Component Variants</h2>
+        <select id="componentSelect"></select>
+        <div id="output"></div>
+    </div>
 
-    <script>window.onmessage = (event) => {
-            console.log("Received message:", event.data);
+    <script>
+        let selectedPages = [];
 
-            if (!event.data || !event.data.pluginMessage) {
-                console.error("Error: No pluginMessage received.");
-                return;
+        window.onmessage = (event) => {
+            if (!event.data || !event.data.pluginMessage) return;
+            
+            const { type, pages, data } = event.data.pluginMessage;
+            
+            if (type === "displayPages") {
+                const pageList = document.getElementById("pageList");
+                pageList.innerHTML = "";
+
+                pages.forEach((pageName) => {
+                    const row = document.createElement("tr");
+                    const checkboxCell = document.createElement("td");
+                    const checkbox = document.createElement("input");
+                    checkbox.type = "checkbox";
+                    checkbox.value = pageName;
+                    checkbox.classList.add("page-checkbox");
+                    checkbox.addEventListener("change", updateSelectedCount);
+                    checkboxCell.appendChild(checkbox);
+                    
+                    const nameCell = document.createElement("td");
+                    nameCell.innerText = pageName;
+
+                    row.appendChild(checkboxCell);
+                    row.appendChild(nameCell);
+                    pageList.appendChild(row);
+                });
+            } 
+            else if (type === "displayComponents") {
+                const select = document.getElementById("componentSelect");
+                const output = document.getElementById("output");
+
+                select.innerHTML = '<option value="">Select a component</option>';
+                data.forEach(({ name }, index) => {
+                    select.innerHTML += `<option value="${index}">${name}</option>`;
+                });
+
+                select.addEventListener("change", () => {
+                    const selectedIndex = select.value;
+                    if (selectedIndex === "") {
+                        output.innerHTML = "";
+                        return;
+                    }
+
+                    const { name, link, allProperties, variants } = data[selectedIndex];
+
+                    output.innerHTML = `
+                        <h3>${name}</h3>
+                        <p><strong>Figma Link:</strong> <a href="${link}" target="_blank">${link}</a></p>
+                        <p><strong>Properties:</strong></p>
+                        <ul>
+                            ${Object.entries(allProperties).map(([key, values]) => `
+                                <li><strong>${key}:</strong> ${Array.from(values).join(", ")}</li>
+                            `).join("")}
+                        </ul>
+                        <table>
+                            <tr>
+                                <th>Preview</th>
+                                <th>Variant</th>
+                                <th>Properties</th>
+                                <th>Instance Count</th>
+                            </tr>
+                            ${variants.map(({ name, properties, image, instanceCount, instanceParents }) => `
+                                <tr>
+                                    <td>${image ? `<img src="${image}" alt="Variant preview">` : "No Image"}</td>
+                                    <td>${name}</td>
+                                    <td>${Object.entries(properties).map(([key, value]) => `<strong>${key}:</strong> ${value}`).join("<br>")}</td>
+                                    <td>${instanceCount} instances found<br>${instanceParents.join(", ")}</td>
+                                </tr>
+                            `).join("")}
+                        </table>
+                    `;
+                });
+
+                document.getElementById("pageSelection").classList.add("hidden");
+                document.getElementById("componentSelection").classList.remove("hidden");
             }
-
-            const { type, pages } = event.data.pluginMessage;
-
-            if (type !== "displayPages") {
-                console.error("Error: Unexpected message type received:", type);
-                return;
-            }
-
-            if (!pages || !Array.isArray(pages)) {
-                console.error("Error: Invalid or missing pages array.");
-                return;
-            }
-
-            console.log("Pages to display:", pages);
-
-            const pageList = document.getElementById("pageList");
-            pageList.innerHTML = "";
-
-            pages.forEach((pageName) => {
-                const row = document.createElement("tr");
-
-                const checkboxCell = document.createElement("td");
-                const checkbox = document.createElement("input");
-                checkbox.type = "checkbox";
-                checkbox.value = pageName;
-                checkbox.classList.add("page-checkbox");
-
-                checkbox.addEventListener("change", updateSelectedCount);
-
-                checkboxCell.appendChild(checkbox);
-
-                const nameCell = document.createElement("td");
-                nameCell.innerText = pageName;
-
-                row.appendChild(checkboxCell);
-                row.appendChild(nameCell);
-                pageList.appendChild(row);
-            });
         };
 
         function updateSelectedCount() {
-            const selectedCount = document.querySelectorAll(".page-checkbox:checked").length;
-            document.getElementById("selectedCount").innerText = `(${selectedCount}) Selected`;
+            const count = document.querySelectorAll(".page-checkbox:checked").length;
+            document.getElementById("selectedCount").innerText = `(${count}) Selected`;
         }
 
         document.getElementById("nextButton").addEventListener("click", () => {
-            const selectedPages = Array.from(document.querySelectorAll(".page-checkbox:checked"))
-                .map((checkbox) => checkbox.value);
-
-            if (selectedPages.length === 0) {
-                alert("Please select at least one page before proceeding.");
-                return;
-            }
-
-            console.log("Selected pages:", selectedPages);
+            selectedPages = Array.from(document.querySelectorAll(".page-checkbox:checked")).map(c => c.value);
             parent.postMessage({ type: "pagesSelected", pages: selectedPages }, "*");
-        });</script>
-
+        });
+    </script>
 </body>
 </html>
