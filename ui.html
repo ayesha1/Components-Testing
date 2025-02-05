@@ -93,8 +93,6 @@
     </style>
 </head>
 <body>
-
-    <!-- Page Selection Screen -->
     <div id="pageSelection">
         <div class="file-header">
             <div class="file-name" id="fileName">Studio Design</div>
@@ -113,24 +111,10 @@
         </table>
     </div>
 
-    <!-- Component Selection Screen -->
     <div id="componentSelection" class="hidden">
         <button id="backButton">Back</button>
         <h2>Component Variants</h2>
-
-        <!-- Table for components -->
-        <table id="componentTable">
-            <thead>
-                <tr>
-                    <th>Preview</th>
-                    <th>Properties</th>
-                    <th>Figma Link</th>
-                    <th>Instances & Location</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody id="componentList"></tbody>
-        </table>
+        <div id="componentContainer"></div>
     </div>
 
     <script>window.onmessage = (event) => {
@@ -153,24 +137,9 @@
             }
         };
 
-        // Function to update selected count
-        function updateSelectedCount() {
-            const selectedCount = document.querySelectorAll(".page-checkbox:checked").length;
-            document.getElementById("selectedCount").innerText = `(${selectedCount}) Selected`;
-        }
-
-        // Function to display pages in a table
         function displayPages(pages) {
-            if (!pages || !Array.isArray(pages)) {
-                console.error("Error: Pages array is missing or invalid.");
-                return;
-            }
-
-            console.log("Displaying pages:", pages);
-
             const pageList = document.getElementById("pageList");
             pageList.innerHTML = "";
-
             pages.forEach((pageName) => {
                 const row = document.createElement("tr");
 
@@ -191,7 +160,11 @@
             });
         }
 
-        // Handle "Next" button click
+        function updateSelectedCount() {
+            const selectedCount = document.querySelectorAll(".page-checkbox:checked").length;
+            document.getElementById("selectedCount").innerText = `(${selectedCount}) Selected`;
+        }
+
         document.getElementById("nextButton").addEventListener("click", () => {
             const selectedPages = Array.from(document.querySelectorAll(".page-checkbox:checked"))
                 .map((checkbox) => checkbox.value);
@@ -201,66 +174,49 @@
                 return;
             }
 
-            console.log("Selected pages:", selectedPages);
-
-            // Switch to component selection view
             document.getElementById("pageSelection").classList.add("hidden");
             document.getElementById("componentSelection").classList.remove("hidden");
 
-            // Request components from the selected pages
             parent.postMessage({ pluginMessage: { type: "pagesSelected", pages: selectedPages } }, "*");
         });
 
-        // Handle "Back" button click
-        document.getElementById("backButton").addEventListener("click", () => {
-            document.getElementById("componentSelection").classList.add("hidden");
-            document.getElementById("pageSelection").classList.remove("hidden");
-        });
-
-        // Function to display components in the table
         function displayComponents(data) {
-            console.log("Displaying component data:", data);
-            const componentList = document.getElementById("componentList");
-            componentList.innerHTML = "";
+            const container = document.getElementById("componentContainer");
+            container.innerHTML = "";
 
             data.forEach(component => {
-                component.variants.forEach(variant => {
-                    const row = document.createElement("tr");
+                const componentSection = document.createElement("div");
+                componentSection.innerHTML = `<h3>${component.name}</h3>`;
+                const table = document.createElement("table");
 
-                    // Image preview
-                    const previewCell = document.createElement("td");
-                    previewCell.innerHTML = variant.image
-                        ? `<img src="${variant.image}" alt="Variant preview" style="max-width: 100px;"> <br> <a href="${variant.image}" download>Download</a>`
-                        : "No Image";
-                    row.appendChild(previewCell);
+                table.innerHTML = `
+                        <thead>
+                            <tr>
+                                <th>Preview</th>
+                                <th>Properties</th>
+                                <th>Figma Link</th>
+                                <th>Instances & Location</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${component.variants.map(variant => `
+                                <tr>
+                                    <td>
+                                        ${variant.image ? `<img src="${variant.image}" style="max-width: 100px;"> <br> <a href="${variant.image}" download>Download</a>` : "No Image"}
+                                    </td>
+                                    <td>${Object.entries(variant.properties).map(([key, value]) => `<strong>${key}:</strong> ${value}`).join("<br>")}</td>
+                                    <td><a href="${component.link}" target="_blank">Open in Figma</a></td>
+                                    <td>${variant.instanceCount} instances found<br>${variant.instanceParents.length ? variant.instanceParents.join(", ") : "No instances"}</td>
+                                    <td>${variant.status}</td>
+                                </tr>
+                            `).join("")}
+                        </tbody>
+                    `;
 
-                    // Properties
-                    const propertiesCell = document.createElement("td");
-                    propertiesCell.innerHTML = Object.entries(variant.properties)
-                        .map(([key, value]) => `<strong>${key}:</strong> ${value}`)
-                        .join("<br>");
-                    row.appendChild(propertiesCell);
-
-                    // Figma Link
-                    const linkCell = document.createElement("td");
-                    linkCell.innerHTML = `<a href="${component.link}" target="_blank">Open in Figma</a>`;
-                    row.appendChild(linkCell);
-
-                    // Instances & Location
-                    const instancesCell = document.createElement("td");
-                    instancesCell.innerHTML = `<strong>${variant.instanceCount}</strong> instances found<br>
-                                ${variant.instanceParents.length > 0 ? variant.instanceParents.join(", ") : "No instances"}`;
-                    row.appendChild(instancesCell);
-
-                    // Status
-                    const statusCell = document.createElement("td");
-                    statusCell.innerText = variant.status || "Unknown";
-                    row.appendChild(statusCell);
-
-                    componentList.appendChild(row);
-                });
+                componentSection.appendChild(table);
+                container.appendChild(componentSection);
             });
         }</script>
-
 </body>
 </html>
