@@ -9,7 +9,7 @@
             font-family: Arial, sans-serif;
             padding: 20px;
             background-color: #f9f9f9;
-            max-width: 900px;
+            max-width: 1000px;
             margin: 0 auto;
         }
 
@@ -31,22 +31,32 @@
             color: #333;
         }
 
-        .page-list {
+        table {
+            width: 100%;
+            border-collapse: collapse;
             margin-bottom: 20px;
         }
 
-        .page-list label {
-            display: inline-block;
-            margin: 5px 15px 5px 0;
-            cursor: pointer;
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
         }
 
-        .checkbox-container {
-            display: flex;
-            flex-wrap: wrap;
+        th {
+            background-color: #4CAF50;
+            color: white;
         }
 
-        button {
+        td {
+            text-align: left;
+        }
+
+            td input[type="checkbox"] {
+                margin-right: 10px;
+            }
+
+        #nextButton {
             padding: 10px 20px;
             background-color: #007BFF;
             color: white;
@@ -56,15 +66,9 @@
             border-radius: 5px;
         }
 
-        button:hover {
-            background-color: #0056b3;
-        }
-
-        #nextButton {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-        }
+            #nextButton:hover {
+                background-color: #0056b3;
+            }
     </style>
 </head>
 <body>
@@ -73,10 +77,17 @@
         <button id="nextButton">Next</button>
     </div>
 
-    <div class="page-list" id="pageList"></div>
+    <table id="pageTable">
+        <thead>
+            <tr>
+                <th>Select Page</th>
+                <th>Page Name</th>
+            </tr>
+        </thead>
+        <tbody id="pageList"></tbody>
+    </table>
 
-    <script>
-        // Example data for pages in the file (you can replace this with actual data dynamically)
+    <script>// Example data for pages in the file (you can replace this with actual data dynamically)
         const pages = [
             { id: 'page1', name: '1.0 Release - WORKING' },
             { id: 'page2', name: 'E-Commerce Component [IR-6675]' },
@@ -85,36 +96,37 @@
             { id: 'page5', name: 'Help Text in Properties Panels [IR-5463]' }
         ];
 
-        // Set the file name dynamically (you can replace this with actual file name from Figma API)
-        const fileName = 'Sample File Name';  // Replace with actual file name from the Figma file
+        // Set the file name dynamically (replace this with actual file name from Figma API)
+        const fileName = 'Studio Design';  // Replace with actual file name from Figma
         document.getElementById('fileName').innerText = `File: ${fileName}`;
 
-        // Generate checkboxes for pages
+        // Generate checkboxes for pages in the table
         const pageList = document.getElementById('pageList');
-        const checkboxContainer = document.createElement('div');
-        checkboxContainer.classList.add('checkbox-container');
         pages.forEach(page => {
+            const row = document.createElement('tr');
+
+            const checkboxCell = document.createElement('td');
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
             checkbox.id = page.id;
             checkbox.value = page.id;
+            checkboxCell.appendChild(checkbox);
 
-            const label = document.createElement('label');
-            label.setAttribute('for', page.id);
-            label.innerText = page.name;
+            const nameCell = document.createElement('td');
+            nameCell.innerText = page.name;
 
-            checkboxContainer.appendChild(checkbox);
-            checkboxContainer.appendChild(label);
+            row.appendChild(checkboxCell);
+            row.appendChild(nameCell);
+
+            pageList.appendChild(row);
         });
-        pageList.appendChild(checkboxContainer);
 
         // Handle Next button click
         document.getElementById('nextButton').addEventListener('click', () => {
-            const selectedPages = Array.from(document.querySelectorAll('.checkbox-container input:checked'))
+            const selectedPages = Array.from(document.querySelectorAll('#pageTable input:checked'))
                 .map(checkbox => checkbox.value);
             console.log('Selected pages:', selectedPages);
             parent.postMessage({ type: 'pagesSelected', pages: selectedPages }, '*');
-        });
-    </script>
+        });</script>
 </body>
 </html>
