@@ -44,9 +44,8 @@
 
         th, td {
             padding: 12px;
-            text-align: left;
+            text-align: center;
             border-bottom: 1px solid #ddd;
-            text-align: center; /* Center align all table data */
         }
 
         th {
@@ -56,8 +55,8 @@
         }
 
         td input[type="checkbox"] {
-            display: block; /* Ensure vertical alignment */
-            margin: 0 auto; /* Center the checkboxes */
+            display: block;
+            margin: 0 auto;
         }
 
         #nextButton, #backButton {
@@ -78,22 +77,6 @@
             display: none;
         }
 
-        #componentTable {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-
-            #componentTable th {
-                background-color: #007BFF;
-                color: white;
-                text-align: center;
-            }
-
-            #componentTable tr:hover {
-                background-color: #f1f1f1;
-            }
-
         select {
             width: 100%;
             padding: 10px;
@@ -107,7 +90,6 @@
 </head>
 <body>
 
-    <!-- Page Selection Screen -->
     <div id="pageSelection">
         <div class="file-header">
             <div class="file-name" id="fileName">Studio Design</div>
@@ -126,18 +108,15 @@
         </table>
     </div>
 
-    <!-- Component Selection Screen -->
     <div id="componentSelection" class="hidden">
         <button id="backButton">Back</button>
         <h2>Component Variants</h2>
 
-        <!-- Dropdown to select component -->
         <label for="componentSelect">Select a Component:</label>
         <select id="componentSelect">
             <option value="">Select a component</option>
         </select>
 
-        <!-- Table for components -->
         <table id="componentTable">
             <thead>
                 <tr>
@@ -152,23 +131,29 @@
         </table>
     </div>
 
-    <script>window.onmessage = (event) => {
-            console.log("DEBUG: Received message:", event.data);
+    <script>const debounce = (func, delay) => {
+            let timeout;
+            return (...args) => {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func(...args), delay);
+            };
+        };
+
+        let componentData = []; // Store components globally
+
+        window.onmessage = (event) => {
             if (!event.data || !event.data.pluginMessage) {
                 console.error("Error: Missing pluginMessage.");
                 return;
             }
 
-            const pluginMessage = event.data.pluginMessage;
-            if (!pluginMessage.type) {
-                console.error("Error: type is missing in pluginMessage:", pluginMessage);
-                return;
-            }
+            const { type, pages, data } = event.data.pluginMessage;
 
-            if (pluginMessage.type === "displayPages") {
-                displayPages(pluginMessage.pages);
-            } else if (pluginMessage.type === "displayComponents") {
-                populateComponentDropdown(pluginMessage.data);
+            if (type === "displayPages") {
+                displayPages(pages);
+            } else if (type === "displayComponents") {
+                componentData = data; // Store component data
+                populateComponentDropdown(data);
             }
         };
 
@@ -178,9 +163,9 @@
                 return;
             }
 
-            console.log("Displaying pages:", pages);
             const pageList = document.getElementById("pageList");
             pageList.innerHTML = "";
+            const fragment = document.createDocumentFragment();
 
             pages.forEach((pageName) => {
                 const row = document.createElement("tr");
@@ -190,7 +175,7 @@
                 checkbox.type = "checkbox";
                 checkbox.value = pageName;
                 checkbox.classList.add("page-checkbox");
-                checkbox.addEventListener("change", updateSelectedCount);
+                checkbox.addEventListener("change", debounce(updateSelectedCount, 200));
                 checkboxCell.appendChild(checkbox);
 
                 const nameCell = document.createElement("td");
@@ -198,8 +183,10 @@
 
                 row.appendChild(checkboxCell);
                 row.appendChild(nameCell);
-                pageList.appendChild(row);
+                fragment.appendChild(row);
             });
+
+            pageList.appendChild(fragment);
 
             document.getElementById("selectAll").addEventListener("change", function () {
                 const isChecked = this.checked;
@@ -224,7 +211,6 @@
                 return;
             }
 
-            console.log("Selected pages:", selectedPages);
             document.getElementById("pageSelection").classList.add("hidden");
             document.getElementById("componentSelection").classList.remove("hidden");
 
@@ -237,7 +223,6 @@
         });
 
         function populateComponentDropdown(data) {
-            console.log("Populating dropdown with component data:", data);
             const componentSelect = document.getElementById("componentSelect");
             componentSelect.innerHTML = '<option value="">Select a component</option>';
 
@@ -249,18 +234,18 @@
             });
 
             componentSelect.addEventListener("change", () => {
-                displayComponentTable(data, componentSelect.value);
+                displayComponentTable(componentSelect.value);
             });
         }
 
-        function displayComponentTable(data, selectedComponent) {
+        function displayComponentTable(selectedComponent) {
             const componentList = document.getElementById("componentList");
             componentList.innerHTML = "";
 
-            const selectedData = data.find(component => component.name === selectedComponent);
-            if (!selectedData) return;
+            const filteredData = componentData.find(component => component.name === selectedComponent);
+            if (!filteredData) return;
 
-            selectedData.variants.forEach(variant => {
+            filteredData.variants.forEach(variant => {
                 const row = document.createElement("tr");
 
                 const previewCell = document.createElement("td");
@@ -268,6 +253,24 @@
                     ? `<img src="${variant.image}" alt="Variant preview" style="max-width: 100px;"> <br> <a href="${variant.image}" download>Download</a>`
                     : "No Image";
                 row.appendChild(previewCell);
+
+                const propertiesCell = document.createElement("td");
+                propertiesCell.innerHTML = Object.entries(variant.properties)
+                    .map(([key, value]) => `<strong>${key}:</strong> ${value}`)
+                    .join("<br>");
+                row.appendChild(propertiesCell);
+
+                const linkCell = document.createElement("td");
+                linkCell.innerHTML = `<a href="${filteredData.link}" target="_blank">Open in Figma</a>`;
+                row.appendChild(linkCell);
+
+                const instancesCell = document.createElement("td");
+                instancesCell.innerText = variant.instanceParents.join(", ") || "No instances";
+                row.appendChild(instancesCell);
+
+                const statusCell = document.createElement("td");
+                statusCell.innerText = variant.status || "Unknown";
+                row.appendChild(statusCell);
 
                 componentList.appendChild(row);
             });
