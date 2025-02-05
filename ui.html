@@ -44,12 +44,8 @@
         }
 
         th {
-            background-color: #f2f2f2; /* Light gray background */
-            color: #333; /* Black text color */
-        }
-
-        td {
-            text-align: left;
+            background-color: #f2f2f2;
+            color: #333;
         }
 
         td input[type="checkbox"] {
@@ -66,9 +62,9 @@
             border-radius: 5px;
         }
 
-        #nextButton:hover {
-            background-color: #0056b3;
-        }
+            #nextButton:hover {
+                background-color: #0056b3;
+            }
     </style>
 </head>
 <body>
@@ -87,46 +83,49 @@
         <tbody id="pageList"></tbody>
     </table>
 
-    <script>
-        window.onmessage = (event) => {
+    <script>window.onmessage = (event) => {
+            // Log the entire received message for debugging
+            console.log('Received message:', event.data.pluginMessage);
+
             const { type, data } = event.data.pluginMessage;
-            console.log('Received data:', data); // Log the received data
+            console.log('Received data:', data);  // Check the data structure
 
-            // Ensure data is available and structured correctly
-            if (type === 'displayPages' && data && data.pages) {
-                const pageList = document.getElementById('pageList');
-                pageList.innerHTML = ''; // Clear any existing rows
-
-                // Display each page name from the Figma file
-                data.pages.forEach(pageName => {
-                    const row = document.createElement('tr');
-
-                    const checkboxCell = document.createElement('td');
-                    const checkbox = document.createElement('input');
-                    checkbox.type = 'checkbox';
-                    checkbox.value = pageName;
-                    checkboxCell.appendChild(checkbox);
-
-                    const nameCell = document.createElement('td');
-                    nameCell.innerText = pageName;
-
-                    row.appendChild(checkboxCell);
-                    row.appendChild(nameCell);
-
-                    pageList.appendChild(row);
-                });
-            } else {
-                console.error('Data structure is incorrect or data is missing');
+            // If data is not in the correct format, show an error
+            if (!data || !Array.isArray(data.pages)) {
+                console.error('Error: Invalid data or pages array is missing.');
+                return;
             }
+
+            console.log('Pages to display:', data.pages);  // Log pages
+
+            // Render the pages in the table
+            const pageList = document.getElementById('pageList');
+            pageList.innerHTML = '';  // Clear any existing rows
+
+            // Loop over the pages and create rows in the table
+            data.pages.forEach(pageName => {
+                const row = document.createElement('tr');
+                const checkboxCell = document.createElement('td');
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.value = pageName;
+                checkboxCell.appendChild(checkbox);
+
+                const nameCell = document.createElement('td');
+                nameCell.innerText = pageName;
+
+                row.appendChild(checkboxCell);
+                row.appendChild(nameCell);
+                pageList.appendChild(row);
+            });
         };
 
-        // Handle Next button click
+        // Handle the "Next" button click
         document.getElementById('nextButton').addEventListener('click', () => {
             const selectedPages = Array.from(document.querySelectorAll('#pageTable input:checked'))
                 .map(checkbox => checkbox.value);
             console.log('Selected pages:', selectedPages);
             parent.postMessage({ type: 'pagesSelected', pages: selectedPages }, '*');
-        });
-    </script>
+        });</script>
 </body>
 </html>
