@@ -52,9 +52,9 @@
             text-align: left;
         }
 
-            td input[type="checkbox"] {
-                margin-right: 10px;
-            }
+        td input[type="checkbox"] {
+            margin-right: 10px;
+        }
 
         #nextButton {
             padding: 10px 20px;
@@ -66,9 +66,9 @@
             border-radius: 5px;
         }
 
-            #nextButton:hover {
-                background-color: #0056b3;
-            }
+        #nextButton:hover {
+            background-color: #0056b3;
+        }
     </style>
 </head>
 <body>
@@ -87,11 +87,13 @@
         <tbody id="pageList"></tbody>
     </table>
 
-    <script>window.onmessage = (event) => {
+    <script>
+        window.onmessage = (event) => {
             const { type, data } = event.data.pluginMessage;
             console.log('Received data:', data); // Log the received data
 
-            if (type === 'displayPages') {
+            // Ensure data is available and structured correctly
+            if (type === 'displayPages' && data && data.pages) {
                 const pageList = document.getElementById('pageList');
                 pageList.innerHTML = ''; // Clear any existing rows
 
@@ -113,6 +115,8 @@
 
                     pageList.appendChild(row);
                 });
+            } else {
+                console.error('Data structure is incorrect or data is missing');
             }
         };
 
@@ -122,6 +126,7 @@
                 .map(checkbox => checkbox.value);
             console.log('Selected pages:', selectedPages);
             parent.postMessage({ type: 'pagesSelected', pages: selectedPages }, '*');
-        });</script>
+        });
+    </script>
 </body>
 </html>
