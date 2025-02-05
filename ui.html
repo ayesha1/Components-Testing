@@ -93,6 +93,8 @@
     </style>
 </head>
 <body>
+
+    <!-- Page Selection Screen -->
     <div id="pageSelection">
         <div class="file-header">
             <div class="file-name" id="fileName">Studio Design</div>
@@ -111,9 +113,12 @@
         </table>
     </div>
 
+    <!-- Component Selection Screen -->
     <div id="componentSelection" class="hidden">
         <button id="backButton">Back</button>
         <h2>Component Variants</h2>
+
+        <!-- Table for components -->
         <table id="componentTable">
             <thead>
                 <tr>
@@ -141,45 +146,6 @@
                 return;
             }
 
-            // Function to update the selected page count
-            function updateSelectedCount() {
-                const selectedCount = document.querySelectorAll(".page-checkbox:checked").length;
-                document.getElementById("selectedCount").innerText = `(${selectedCount}) Selected`;
-            }
-
-
-            // Function to display pages in a table
-            function displayPages(pages) {
-                if (!pages || !Array.isArray(pages)) {
-                    console.error("Error: Pages array is missing or invalid.");
-                    return;
-                }
-
-                console.log("Displaying pages:", pages);
-
-                const pageList = document.getElementById("pageList");
-                pageList.innerHTML = "";
-                pages.forEach((pageName) => {
-                    const row = document.createElement("tr");
-
-                    const checkboxCell = document.createElement("td");
-                    const checkbox = document.createElement("input");
-                    checkbox.type = "checkbox";
-                    checkbox.value = pageName;
-                    checkbox.classList.add("page-checkbox");
-                    checkbox.addEventListener("change", updateSelectedCount);
-                    checkboxCell.appendChild(checkbox);
-
-                    const nameCell = document.createElement("td");
-                    nameCell.innerText = pageName;
-
-                    row.appendChild(checkboxCell);
-                    row.appendChild(nameCell);
-                    pageList.appendChild(row);
-                });
-            }
-
-
             if (pluginMessage.type === "displayPages") {
                 displayPages(pluginMessage.pages);
             } else if (pluginMessage.type === "displayComponents") {
@@ -187,6 +153,71 @@
             }
         };
 
+        // Function to update selected count
+        function updateSelectedCount() {
+            const selectedCount = document.querySelectorAll(".page-checkbox:checked").length;
+            document.getElementById("selectedCount").innerText = `(${selectedCount}) Selected`;
+        }
+
+        // Function to display pages in a table
+        function displayPages(pages) {
+            if (!pages || !Array.isArray(pages)) {
+                console.error("Error: Pages array is missing or invalid.");
+                return;
+            }
+
+            console.log("Displaying pages:", pages);
+
+            const pageList = document.getElementById("pageList");
+            pageList.innerHTML = "";
+
+            pages.forEach((pageName) => {
+                const row = document.createElement("tr");
+
+                const checkboxCell = document.createElement("td");
+                const checkbox = document.createElement("input");
+                checkbox.type = "checkbox";
+                checkbox.value = pageName;
+                checkbox.classList.add("page-checkbox");
+                checkbox.addEventListener("change", updateSelectedCount);
+                checkboxCell.appendChild(checkbox);
+
+                const nameCell = document.createElement("td");
+                nameCell.innerText = pageName;
+
+                row.appendChild(checkboxCell);
+                row.appendChild(nameCell);
+                pageList.appendChild(row);
+            });
+        }
+
+        // Handle "Next" button click
+        document.getElementById("nextButton").addEventListener("click", () => {
+            const selectedPages = Array.from(document.querySelectorAll(".page-checkbox:checked"))
+                .map((checkbox) => checkbox.value);
+
+            if (selectedPages.length === 0) {
+                alert("Please select at least one page before proceeding.");
+                return;
+            }
+
+            console.log("Selected pages:", selectedPages);
+
+            // Switch to component selection view
+            document.getElementById("pageSelection").classList.add("hidden");
+            document.getElementById("componentSelection").classList.remove("hidden");
+
+            // Request components from the selected pages
+            parent.postMessage({ pluginMessage: { type: "pagesSelected", pages: selectedPages } }, "*");
+        });
+
+        // Handle "Back" button click
+        document.getElementById("backButton").addEventListener("click", () => {
+            document.getElementById("componentSelection").classList.add("hidden");
+            document.getElementById("pageSelection").classList.remove("hidden");
+        });
+
+        // Function to display components in the table
         function displayComponents(data) {
             console.log("Displaying component data:", data);
             const componentList = document.getElementById("componentList");
@@ -196,34 +227,40 @@
                 component.variants.forEach(variant => {
                     const row = document.createElement("tr");
 
+                    // Image preview
                     const previewCell = document.createElement("td");
                     previewCell.innerHTML = variant.image
                         ? `<img src="${variant.image}" alt="Variant preview" style="max-width: 100px;"> <br> <a href="${variant.image}" download>Download</a>`
                         : "No Image";
                     row.appendChild(previewCell);
 
+                    // Properties
                     const propertiesCell = document.createElement("td");
                     propertiesCell.innerHTML = Object.entries(variant.properties)
                         .map(([key, value]) => `<strong>${key}:</strong> ${value}`)
                         .join("<br>");
                     row.appendChild(propertiesCell);
 
+                    // Figma Link
                     const linkCell = document.createElement("td");
                     linkCell.innerHTML = `<a href="${component.link}" target="_blank">Open in Figma</a>`;
                     row.appendChild(linkCell);
 
+                    // Instances & Location
                     const instancesCell = document.createElement("td");
                     instancesCell.innerHTML = `<strong>${variant.instanceCount}</strong> instances found<br>
                                 ${variant.instanceParents.length > 0 ? variant.instanceParents.join(", ") : "No instances"}`;
                     row.appendChild(instancesCell);
 
+                    // Status
                     const statusCell = document.createElement("td");
-                    statusCell.innerText = variant.status;
+                    statusCell.innerText = variant.status || "Unknown";
                     row.appendChild(statusCell);
 
                     componentList.appendChild(row);
                 });
             });
         }</script>
+
 </body>
 </html>
