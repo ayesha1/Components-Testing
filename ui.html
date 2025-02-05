@@ -51,6 +51,7 @@
         th {
             background-color: #f2f2f2;
             color: #333;
+            text-align: center;
         }
 
         td input[type="checkbox"] {
@@ -115,7 +116,7 @@
         <table id="pageTable">
             <thead>
                 <tr>
-                    <th>Select Page</th>
+                    <th><input type="checkbox" id="selectAll"> Select All</th>
                     <th>Page Name</th>
                 </tr>
             </thead>
@@ -178,6 +179,7 @@
             console.log("Displaying pages:", pages);
             const pageList = document.getElementById("pageList");
             pageList.innerHTML = "";
+
             pages.forEach((pageName) => {
                 const row = document.createElement("tr");
 
@@ -195,6 +197,14 @@
                 row.appendChild(checkboxCell);
                 row.appendChild(nameCell);
                 pageList.appendChild(row);
+            });
+
+            document.getElementById("selectAll").addEventListener("change", function () {
+                const isChecked = this.checked;
+                document.querySelectorAll(".page-checkbox").forEach(checkbox => {
+                    checkbox.checked = isChecked;
+                });
+                updateSelectedCount();
             });
         }
 
@@ -256,21 +266,6 @@
                     ? `<img src="${variant.image}" alt="Variant preview" style="max-width: 100px;"> <br> <a href="${variant.image}" download>Download</a>`
                     : "No Image";
                 row.appendChild(previewCell);
-
-                const propertiesCell = document.createElement("td");
-                propertiesCell.innerHTML = Object.entries(variant.properties)
-                    .map(([key, value]) => `<strong>${key}:</strong> ${value}`)
-                    .join("<br>");
-                row.appendChild(propertiesCell);
-
-                const linkCell = document.createElement("td");
-                linkCell.innerHTML = `<a href="${selectedData.link}" target="_blank">Open in Figma</a>`;
-                row.appendChild(linkCell);
-
-                const instancesCell = document.createElement("td");
-                instancesCell.innerHTML = `<strong>${variant.instanceCount}</strong> instances found<br>
-                            ${variant.instanceParents.length > 0 ? variant.instanceParents.join(", ") : "No instances"}`;
-                row.appendChild(instancesCell);
 
                 componentList.appendChild(row);
             });
