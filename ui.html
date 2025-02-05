@@ -85,33 +85,46 @@
 
     <script>window.onmessage = (event) => {
             // Log the entire received message for debugging
-            console.log('Received message:', event.data.pluginMessage);
+            console.log("Received message:", event.data);
 
-            const { type, data } = event.data.pluginMessage;
-            console.log('Received data:', data);  // Check the data structure
-
-            // If data is not in the correct format, show an error
-            if (!data || !Array.isArray(data.pages)) {
-                console.error('Error: Invalid data or pages array is missing.');
+            // Ensure pluginMessage exists before accessing properties
+            if (!event.data || !event.data.pluginMessage) {
+                console.error("Error: No pluginMessage received.");
                 return;
             }
 
-            console.log('Pages to display:', data.pages);  // Log pages
+            const { type, pages } = event.data.pluginMessage;
+
+            // Ensure correct message type
+            if (type !== "displayPages") {
+                console.error("Error: Unexpected message type received:", type);
+                return;
+            }
+
+            // Ensure pages is a valid array
+            if (!pages || !Array.isArray(pages)) {
+                console.error("Error: Invalid or missing pages array.");
+                return;
+            }
+
+            console.log("Pages to display:", pages); // Log pages for verification
 
             // Render the pages in the table
-            const pageList = document.getElementById('pageList');
-            pageList.innerHTML = '';  // Clear any existing rows
+            const pageList = document.getElementById("pageList");
+            pageList.innerHTML = ""; // Clear any existing rows
 
             // Loop over the pages and create rows in the table
-            data.pages.forEach(pageName => {
-                const row = document.createElement('tr');
-                const checkboxCell = document.createElement('td');
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
+            pages.forEach((pageName) => {
+                const row = document.createElement("tr");
+
+                const checkboxCell = document.createElement("td");
+                const checkbox = document.createElement("input");
+                checkbox.type = "checkbox";
                 checkbox.value = pageName;
+                checkbox.classList.add("page-checkbox"); // Class for easier selection
                 checkboxCell.appendChild(checkbox);
 
-                const nameCell = document.createElement('td');
+                const nameCell = document.createElement("td");
                 nameCell.innerText = pageName;
 
                 row.appendChild(checkboxCell);
@@ -121,11 +134,18 @@
         };
 
         // Handle the "Next" button click
-        document.getElementById('nextButton').addEventListener('click', () => {
-            const selectedPages = Array.from(document.querySelectorAll('#pageTable input:checked'))
-                .map(checkbox => checkbox.value);
-            console.log('Selected pages:', selectedPages);
-            parent.postMessage({ type: 'pagesSelected', pages: selectedPages }, '*');
+        document.getElementById("nextButton").addEventListener("click", () => {
+            const selectedPages = Array.from(document.querySelectorAll(".page-checkbox:checked"))
+                .map((checkbox) => checkbox.value);
+
+            if (selectedPages.length === 0) {
+                alert("Please select at least one page before proceeding.");
+                return;
+            }
+
+            console.log("Selected pages:", selectedPages);
+            parent.postMessage({ type: "pagesSelected", pages: selectedPages }, "*");
         });</script>
+
 </body>
 </html>

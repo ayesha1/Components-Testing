@@ -18,5 +18,5 @@ const message = {
 console.log('Message being sent to the UI:', message);
 
 // Send the message to the UI
-figma.ui.postMessage(message);
-    
+// CHANGE 1 figma.ui.postMessage(message);
+figma.ui.postMessage({ type: 'displayPages', pages });
