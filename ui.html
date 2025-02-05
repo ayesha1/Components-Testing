@@ -103,95 +103,75 @@
     </div>
 
     <script>
-        let selectedPages = [];
+    window.onmessage = (event) => {
+        console.log("DEBUG: Received message:", event.data);
 
-        window.onmessage = (event) => {
-            if (!event.data || !event.data.pluginMessage) return;
-            
-            const { type, pages, data } = event.data.pluginMessage;
-            
-            if (type === "displayPages") {
-                const pageList = document.getElementById("pageList");
-                pageList.innerHTML = "";
-
-                pages.forEach((pageName) => {
-                    const row = document.createElement("tr");
-                    const checkboxCell = document.createElement("td");
-                    const checkbox = document.createElement("input");
-                    checkbox.type = "checkbox";
-                    checkbox.value = pageName;
-                    checkbox.classList.add("page-checkbox");
-                    checkbox.addEventListener("change", updateSelectedCount);
-                    checkboxCell.appendChild(checkbox);
-                    
-                    const nameCell = document.createElement("td");
-                    nameCell.innerText = pageName;
-
-                    row.appendChild(checkboxCell);
-                    row.appendChild(nameCell);
-                    pageList.appendChild(row);
-                });
-            } 
-            else if (type === "displayComponents") {
-                const select = document.getElementById("componentSelect");
-                const output = document.getElementById("output");
-
-                select.innerHTML = '<option value="">Select a component</option>';
-                data.forEach(({ name }, index) => {
-                    select.innerHTML += `<option value="${index}">${name}</option>`;
-                });
-
-                select.addEventListener("change", () => {
-                    const selectedIndex = select.value;
-                    if (selectedIndex === "") {
-                        output.innerHTML = "";
-                        return;
-                    }
-
-                    const { name, link, allProperties, variants } = data[selectedIndex];
-
-                    output.innerHTML = `
-                        <h3>${name}</h3>
-                        <p><strong>Figma Link:</strong> <a href="${link}" target="_blank">${link}</a></p>
-                        <p><strong>Properties:</strong></p>
-                        <ul>
-                            ${Object.entries(allProperties).map(([key, values]) => `
-                                <li><strong>${key}:</strong> ${Array.from(values).join(", ")}</li>
-                            `).join("")}
-                        </ul>
-                        <table>
-                            <tr>
-                                <th>Preview</th>
-                                <th>Variant</th>
-                                <th>Properties</th>
-                                <th>Instance Count</th>
-                            </tr>
-                            ${variants.map(({ name, properties, image, instanceCount, instanceParents }) => `
-                                <tr>
-                                    <td>${image ? `<img src="${image}" alt="Variant preview">` : "No Image"}</td>
-                                    <td>${name}</td>
-                                    <td>${Object.entries(properties).map(([key, value]) => `<strong>${key}:</strong> ${value}`).join("<br>")}</td>
-                                    <td>${instanceCount} instances found<br>${instanceParents.join(", ")}</td>
-                                </tr>
-                            `).join("")}
-                        </table>
-                    `;
-                });
-
-                document.getElementById("pageSelection").classList.add("hidden");
-                document.getElementById("componentSelection").classList.remove("hidden");
-            }
-        };
-
-        function updateSelectedCount() {
-            const count = document.querySelectorAll(".page-checkbox:checked").length;
-            document.getElementById("selectedCount").innerText = `(${count}) Selected`;
+        if (!event.data || !event.data.pluginMessage) {
+            console.error("Error: Missing pluginMessage.");
+            return;
         }
 
-        document.getElementById("nextButton").addEventListener("click", () => {
-            selectedPages = Array.from(document.querySelectorAll(".page-checkbox:checked")).map(c => c.value);
-            parent.postMessage({ type: "pagesSelected", pages: selectedPages }, "*");
+        console.log("DEBUG: Received pluginMessage:", event.data.pluginMessage);
+
+        const pluginMessage = event.data.pluginMessage;
+
+        if (!pluginMessage.type) {
+            console.error("Error: type is missing in pluginMessage:", pluginMessage);
+            return;
+        }
+
+        const { type, pages } = event.data.pluginMessage;
+
+        if (type !=="displayPages") {
+            console.error("Error: Unexpected message type:", type);
+            return;
+        }
+
+        if (!pages || !Array.isArray(pages)) {
+            console.error("Error: Pages array is missing or invalid.");
+            return;
+        }
+
+        console.log("Displaying pages:", pages);
+
+        // Update page list
+        const pageList = document.getElementById("pageList");
+        pageList.innerHTML = "";
+        pages.forEach((pageName) => {
+            const row = document.createElement("tr");
+
+            const checkboxCell = document.createElement("td");
+            const checkbox = document.createElement("input");
+            checkbox.type = "checkbox";
+            checkbox.value = pageName;
+            checkbox.classList.add("page-checkbox");
+            checkboxCell.appendChild(checkbox);
+
+            const nameCell = document.createElement("td");
+            nameCell.innerText = pageName;
+
+            row.appendChild(checkboxCell);
+            row.appendChild(nameCell);
+            pageList.appendChild(row);
         });
-    </script>
+    };
+
+    document.getElementById("nextButton").addEventListener("click", () => {
+        const selectedPages = Array.from(document.querySelectorAll(".page-checkbox:checked"))
+            .map((checkbox) => checkbox.value);
+
+        if (selectedPages.length === 0) {
+            alert("Please select at least one page before proceeding.");
+            return;
+        }
+
+        console.log("Selected pages:", selectedPages);
+
+        // Send message with correct format
+        parent.postMessage({ pluginMessage: { type: "pagesSelected", pages: selectedPages } }, "*");
+    });
+</script>
+
+
 </body>
 </html>
